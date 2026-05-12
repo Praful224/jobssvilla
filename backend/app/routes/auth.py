@@ -99,7 +99,10 @@ def profile(
     user = db.query(User).filter(
         User.email == email
     ).first()
-
+    if not user:
+        return {
+            "error": "User not found"
+        }
     return {
         "id": user.id,
         "name": user.name,
