@@ -1,7 +1,7 @@
 from passlib.context import CryptContext
 from jose import jwt
 from datetime import datetime, timedelta
-
+from jose import JWTError
 SECRET_KEY = "jobsvilla_secret_key"
 ALGORITHM = "HS256"
 
@@ -38,4 +38,23 @@ def create_access_token(data: dict):
         algorithm=ALGORITHM
     )
 
-    return encoded_jwt
+    return encoded_jwt   
+def verify_token(token: str):
+
+    try:
+
+        payload = jwt.decode(
+            token,
+            SECRET_KEY,
+            algorithms=[ALGORITHM]
+        )
+
+        email = payload.get("sub")
+
+        if email is None:
+            return None
+
+        return email
+
+    except JWTError:
+        return None
