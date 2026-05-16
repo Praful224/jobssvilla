@@ -1,133 +1,168 @@
-"use client"
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Save } from "lucide-react";
+import { apiFetch, getToken, jsonHeaders, Profile } from "@/lib/api";
+import { AppShell } from "@/components/AppShell";
+
+const emptyProfile: Profile = {
+  full_name: "",
+  title: "",
+  phone: "",
+  location: "",
+  bio: "",
+  skills: "",
+  experience: "",
+  education: "",
+  portfolio_url: "",
+  github_url: "",
+  linkedin_url: "",
+  resume_url: "",
+};
 
 export default function ProfilePage() {
+  const router = useRouter();
+  const [profile, setProfile] = useState<Profile>(emptyProfile);
+  const [status, setStatus] = useState("");
+
+  useEffect(() => {
+    if (!getToken()) {
+      router.push("/login");
+      return;
+    }
+
+    apiFetch<Profile>("/profile", { auth: true }).then(setProfile);
+  }, [router]);
+
+  const updateField = (field: keyof Profile, value: string) => {
+    setProfile((current) => ({
+      ...current,
+      [field]: value,
+    }));
+  };
+
+  const saveProfile = async () => {
+    const data = await apiFetch<Profile>("/profile", {
+      auth: true,
+      method: "PUT",
+      headers: jsonHeaders(),
+      body: JSON.stringify(profile),
+    });
+    setProfile(data);
+    setStatus("Profile saved");
+  };
 
   return (
+    <AppShell
+      title="Profile"
+      subtitle="Keep your career identity, skills, links, and resume location in one place."
+    >
+      <div className="grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
+        <aside className="rounded-lg border border-white/10 bg-white/[0.04] p-5">
+          <div className="flex h-24 w-24 items-center justify-center rounded-lg bg-emerald-500 text-4xl font-semibold text-zinc-950">
+            {(profile.full_name || profile.name || "U").charAt(0).toUpperCase()}
+          </div>
+          <h2 className="mt-5 text-2xl font-semibold">
+            {profile.full_name || profile.name || "User"}
+          </h2>
+          <p className="mt-1 text-sm text-zinc-400">{profile.email}</p>
+          <p className="mt-4 text-sm text-zinc-300">{profile.title}</p>
+          {status ? <p className="mt-4 text-sm text-emerald-300">{status}</p> : null}
+        </aside>
 
-    <main className="min-h-screen bg-black text-white p-10">
-
-      <div className="max-w-6xl mx-auto">
-
-        <h1 className="text-5xl font-bold">
-
-          My Profile
-
-        </h1>
-
-        <div className="grid md:grid-cols-3 gap-8 mt-12">
-
-          {/* LEFT */}
-
-          <div className="bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-xl">
-
-            <div className="w-28 h-28 rounded-full bg-blue-600 flex items-center justify-center text-5xl font-bold">
-
-              P
-
-            </div>
-
-            <h2 className="text-3xl font-bold mt-6">
-
-              Praful Chalakh
-
-            </h2>
-
-            <p className="text-gray-400 mt-2">
-
-              DevOps & Cloud Engineer
-
-            </p>
-
-            <button className="mt-8 bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-2xl">
-
-              Upload Resume
-
-            </button>
-
+        <section className="rounded-lg border border-white/10 bg-white/[0.04] p-5">
+          <div className="grid gap-3 md:grid-cols-2">
+            <input
+              value={profile.full_name || ""}
+              onChange={(event) => updateField("full_name", event.target.value)}
+              placeholder="Full name"
+              className="rounded-md border border-white/10 bg-black px-3 py-3 text-sm outline-none"
+            />
+            <input
+              value={profile.title || ""}
+              onChange={(event) => updateField("title", event.target.value)}
+              placeholder="Professional title"
+              className="rounded-md border border-white/10 bg-black px-3 py-3 text-sm outline-none"
+            />
+            <input
+              value={profile.phone || ""}
+              onChange={(event) => updateField("phone", event.target.value)}
+              placeholder="Phone"
+              className="rounded-md border border-white/10 bg-black px-3 py-3 text-sm outline-none"
+            />
+            <input
+              value={profile.location || ""}
+              onChange={(event) => updateField("location", event.target.value)}
+              placeholder="Location"
+              className="rounded-md border border-white/10 bg-black px-3 py-3 text-sm outline-none"
+            />
+            <input
+              value={profile.github_url || ""}
+              onChange={(event) => updateField("github_url", event.target.value)}
+              placeholder="GitHub URL"
+              className="rounded-md border border-white/10 bg-black px-3 py-3 text-sm outline-none"
+            />
+            <input
+              value={profile.linkedin_url || ""}
+              onChange={(event) => updateField("linkedin_url", event.target.value)}
+              placeholder="LinkedIn URL"
+              className="rounded-md border border-white/10 bg-black px-3 py-3 text-sm outline-none"
+            />
+            <input
+              value={profile.portfolio_url || ""}
+              onChange={(event) =>
+                updateField("portfolio_url", event.target.value)
+              }
+              placeholder="Portfolio URL"
+              className="rounded-md border border-white/10 bg-black px-3 py-3 text-sm outline-none"
+            />
+            <input
+              value={profile.resume_url || ""}
+              onChange={(event) => updateField("resume_url", event.target.value)}
+              placeholder="Resume URL"
+              className="rounded-md border border-white/10 bg-black px-3 py-3 text-sm outline-none"
+            />
           </div>
 
-          {/* RIGHT */}
+          <textarea
+            value={profile.bio || ""}
+            onChange={(event) => updateField("bio", event.target.value)}
+            rows={4}
+            placeholder="Bio"
+            className="mt-3 w-full rounded-md border border-white/10 bg-black px-3 py-3 text-sm outline-none"
+          />
+          <textarea
+            value={profile.experience || ""}
+            onChange={(event) => updateField("experience", event.target.value)}
+            rows={5}
+            placeholder="Experience"
+            className="mt-3 w-full rounded-md border border-white/10 bg-black px-3 py-3 text-sm outline-none"
+          />
+          <textarea
+            value={profile.skills || ""}
+            onChange={(event) => updateField("skills", event.target.value)}
+            rows={3}
+            placeholder="Skills"
+            className="mt-3 w-full rounded-md border border-white/10 bg-black px-3 py-3 text-sm outline-none"
+          />
+          <textarea
+            value={profile.education || ""}
+            onChange={(event) => updateField("education", event.target.value)}
+            rows={3}
+            placeholder="Education"
+            className="mt-3 w-full rounded-md border border-white/10 bg-black px-3 py-3 text-sm outline-none"
+          />
 
-          <div className="md:col-span-2 space-y-8">
-
-            {/* PERSONAL */}
-
-            <div className="bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-xl">
-
-              <h2 className="text-3xl font-bold">
-
-                Personal Information
-
-              </h2>
-
-              <div className="grid md:grid-cols-2 gap-6 mt-8">
-
-                <input
-                  placeholder="Full Name"
-                  className="bg-black/30 border border-white/10 rounded-2xl p-4 outline-none"
-                />
-
-                <input
-                  placeholder="Email"
-                  className="bg-black/30 border border-white/10 rounded-2xl p-4 outline-none"
-                />
-
-                <input
-                  placeholder="Phone"
-                  className="bg-black/30 border border-white/10 rounded-2xl p-4 outline-none"
-                />
-
-                <input
-                  placeholder="Date of Birth"
-                  className="bg-black/30 border border-white/10 rounded-2xl p-4 outline-none"
-                />
-
-              </div>
-
-            </div>
-
-            {/* EXPERIENCE */}
-
-            <div className="bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-xl">
-
-              <h2 className="text-3xl font-bold">
-
-                Experience
-
-              </h2>
-
-              <textarea
-                placeholder="Tell us about your experience..."
-                rows={5}
-                className="w-full mt-8 bg-black/30 border border-white/10 rounded-2xl p-4 outline-none"
-              />
-
-            </div>
-
-            {/* SKILLS */}
-
-            <div className="bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-xl">
-
-              <h2 className="text-3xl font-bold">
-
-                Skills
-
-              </h2>
-
-              <input
-                placeholder="DevOps, AWS, Kubernetes..."
-                className="w-full mt-8 bg-black/30 border border-white/10 rounded-2xl p-4 outline-none"
-              />
-
-            </div>
-
-          </div>
-
-        </div>
-
+          <button
+            onClick={saveProfile}
+            className="mt-4 inline-flex items-center gap-2 rounded-md bg-emerald-500 px-4 py-3 text-sm font-medium text-zinc-950 hover:bg-emerald-400"
+          >
+            <Save size={17} />
+            Save Profile
+          </button>
+        </section>
       </div>
-
-    </main>
-
-  )
+    </AppShell>
+  );
 }

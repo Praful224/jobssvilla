@@ -1,336 +1,108 @@
-# JobsVilla 🚀
+# JobsVilla
 
-JobsVilla is a modern career ecosystem platform built for tech professionals to discover job opportunities, connect with mentors, and prepare for interviews.
+JobsVilla is a career platform for job discovery, application tracking, profile management, resume analysis, mentorship, community, and recruiter workflows.
 
-The platform provides:
-- Daily tech job postings
-- JWT-based authentication system
-- Secure backend APIs
-- Telegram automation for job alerts
-- Future mentorship & mock interview system
+## What Is Implemented On `dev`
 
----
+- Next.js frontend pages: dashboard, profile, settings, applications, saved jobs, companies, recruiter portal, mentorship market, community feed, resume builder, notifications, analytics, and roadmap.
+- Shared frontend components: `AppShell`, `JobCard`, `SearchBar`, `ResumeBuilder`, `ChatWidget`, and `Kanban`.
+- FastAPI routes: `/auth`, `/jobs`, `/profile`, `/applications`, `/saved-jobs`, `/notifications`, `/resume`, `/recruiter`, `/mentors`, `/companies`, `/analytics`, `/ai`, and `/community/posts`.
+- SQLAlchemy models: user, job, profile, application, saved job, notification, resume, company, review, mentor, interview, community post, message, and skill gap.
+- Service layer foundations for jobs, profiles, applications, notifications, resume analysis, analytics, AI helper responses, mentorship, companies, and community.
+- Codespaces configuration in `.devcontainer/devcontainer.json`.
 
-# Features
+## Codespaces Setup
 
-## Current Features
-- FastAPI backend setup
-- PostgreSQL database integration
-- Dockerized PostgreSQL
-- SQLAlchemy ORM models
-- User registration API
-- Login API
-- JWT authentication
-- Password hashing
-- Protected route support
-- Swagger API documentation
-
----
-
-# Upcoming Features
-
-## Jobs Module
-- Create jobs
-- Update jobs
-- Delete jobs
-- Search & filter jobs
-
-## Mentorship Module
-- Mentor profiles
-- Session booking
-- Career guidance
-
-## Mock Interview Module
-- DevOps interviews
-- DSA interviews
-- HR interviews
-- Feedback system
-
-## Notifications
-- Telegram integration
-- Email alerts
-- Push notifications
-
----
-
-# Tech Stack
-
-## Backend
-- FastAPI
-- SQLAlchemy
-- PostgreSQL
-- JWT Authentication
-- Passlib
-- Docker
-
-## Frontend (Upcoming)
-- Next.js
-- Tailwind CSS
-- TypeScript
-- ShadCN UI
-
-## DevOps
-- Docker
-- GitHub Actions
-- Render/Vercel Deployment
-
----
-
-# Project Structure
+Open the repo in GitHub Codespaces on the `dev` branch.
 
 ```bash
-jobssvilla/
-│
-├── backend/
-│   ├── app/
-│   │   ├── config/
-│   │   ├── models/
-│   │   ├── routes/
-│   │   ├── schemas/
-│   │   ├── services/
-│   │   └── main.py
-│   │
-│   ├── requirements.txt
-│   ├── docker-compose.yml
-│   └── .gitignore
-│
-└── frontend/
+git checkout dev
 ```
 
----
-
-# Backend Setup
-
-## Clone Repository
+Create backend environment variables:
 
 ```bash
-git clone <your-repo-url>
-cd jobssvilla/backend
+cp backend/.env.example backend/.env
 ```
 
----
-
-# Create Virtual Environment
+Create frontend environment variables:
 
 ```bash
-python3 -m venv venv
+cp frontend/.env.example frontend/.env.local
 ```
 
-Activate venv:
+In Codespaces, open the **Ports** tab after starting the backend and copy the forwarded URL for port `8000`. Put that URL in `frontend/.env.local`:
 
-## Linux / Mac
-
-```bash
-source venv/bin/activate
+```text
+NEXT_PUBLIC_API_URL=https://YOUR-CODESPACE-8000-URL.app.github.dev
 ```
 
-## Windows
+Start PostgreSQL:
 
 ```bash
-venv\Scripts\activate
-```
-
----
-
-# Install Dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
----
-
-# Start PostgreSQL Docker Container
-
-```bash
+cd backend
 docker compose up -d
 ```
 
----
-
-# Run FastAPI Server
+Install and run the backend:
 
 ```bash
+cd backend
+pip install -r requirements.txt
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
----
+In a second terminal, install and run the frontend:
 
-# Swagger Documentation
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-Open:
+Open the forwarded frontend URL for port `3000`. The API docs are available on the forwarded backend URL at `/docs`.
+
+## Important Environment Notes
+
+For Codespaces, the backend allows GitHub preview URLs through CORS using this regex:
 
 ```text
-http://127.0.0.1:8000/docs
+https://*.app.github.dev
 ```
 
----
-
-# Database Setup
-
-PostgreSQL runs inside Docker container.
-
-Default configuration:
-
-- Database: `jobsvilla`
-- Username: `postgres`
-- Password: `postgres`
-- Port: `5432`
-
----
-
-# Authentication APIs
-
-## Register User
-
-### POST `/register`
-
-Request:
-
-```json
-{
-  "name": "Praful",
-  "email": "praful@gmail.com",
-  "password": "123456"
-}
-```
-
----
-
-## Login User
-
-### POST `/login`
-
-Request:
-
-```json
-{
-  "email": "praful@gmail.com",
-  "password": "123456"
-}
-```
-
-Response:
-
-```json
-{
-  "access_token": "JWT_TOKEN",
-  "token_type": "bearer"
-}
-```
-
----
-
-# Protected Routes
-
-Future protected APIs will require:
+If your frontend cannot reach the backend, update `frontend/.env.local`:
 
 ```text
-Authorization: Bearer JWT_TOKEN
+NEXT_PUBLIC_API_URL=https://YOUR-8000-CODESPACE-URL.app.github.dev
 ```
 
----
+Then restart the Next.js dev server.
 
-# Docker Commands
+## Main API Routes
 
-## Start Containers
+- `POST /register` and `POST /login` remain for existing frontend compatibility.
+- `POST /auth/register` and `POST /auth/login` are also available for the architecture-style `/auth` group.
+- `GET /jobs`, `GET /jobs/search?q=python`, `POST /jobs`
+- `GET /profile`, `PUT /profile`
+- `GET /applications`, `POST /applications`, `PATCH /applications/{id}`
+- `GET /saved-jobs`, `POST /saved-jobs`, `DELETE /saved-jobs/{job_id}`
+- `GET /notifications`, `POST /notifications`, `PATCH /notifications/{id}/read`
+- `GET /resume`, `PUT /resume`, `POST /resume/analyze`
+- `GET /recruiter/dashboard`, `POST /recruiter/jobs`
+- `GET /companies`, `POST /companies`, `POST /companies/reviews`
+- `GET /mentors`, `POST /mentors`, `POST /mentors/interviews`
+- `GET /analytics/summary`
+- `GET /ai/recommendations`, `POST /ai/resume-analyzer`, `POST /ai/skill-gap`, `POST /ai/career-assistant`
+- `GET /community/posts`, `POST /community/posts`
 
-```bash
-docker compose up -d
-```
+## Next Feature Layers
 
-## Stop Containers
+The current implementation includes integration-ready placeholders for AI and third-party services. The next production passes should add:
 
-```bash
-docker compose down
-```
-
-## View Running Containers
-
-```bash
-docker ps
-```
-
----
-
-# Git Workflow
-
-## Add Changes
-
-```bash
-git add .
-```
-
-## Commit Changes
-
-```bash
-git commit -m "your message"
-```
-
-## Push Code
-
-```bash
-git push origin main
-```
-
----
-
-# Future Roadmap
-
-## Phase 1
-- Authentication
-- Jobs CRUD APIs
-- Telegram automation
-
-## Phase 2
-- Frontend UI
-- Dashboard
-- Job filters
-
-## Phase 3
-- Mentorship system
-- Booking system
-
-## Phase 4
-- Mock interview platform
-- Feedback dashboard
-
-## Phase 5
-- AI features
-- Resume analysis
-- ATS scoring
-
----
-
-# Security Features
-
-- Password hashing
-- JWT authentication
-- Protected APIs
-- SQLAlchemy ORM protection
-- Input validation
-
----
-
-# Deployment Plan
-
-## Frontend
-- Vercel
-
-## Backend
-- Render/Railway
-
-## Database
-- PostgreSQL Docker Container
-
----
-
-# Author
-
-Praful Chalakh
-
----
-
-# License
-
-This project is licensed under the MIT License.
+- Real LLM provider integration for resume analysis and career assistant.
+- File uploads to S3-compatible storage for resumes and avatars.
+- OAuth login/import for LinkedIn and GitHub.
+- Email, Telegram, and WhatsApp notification workers.
+- Celery/Redis background jobs.
+- Proper Alembic migrations instead of `Base.metadata.create_all`.
+- Recruiter ATS export and payment integration for mentor bookings.

@@ -2,7 +2,9 @@ from passlib.context import CryptContext
 from jose import jwt
 from datetime import datetime, timedelta
 from jose import JWTError
-SECRET_KEY = "jobsvilla_secret_key"
+import os
+
+SECRET_KEY = os.getenv("SECRET_KEY", "jobsvilla_secret_key")
 ALGORITHM = "HS256"
 
 pwd_context = CryptContext(
