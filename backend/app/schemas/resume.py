@@ -14,13 +14,3 @@ class ResumeUpsert(BaseModel):
     skills: Optional[str] = None
     target_role: Optional[str] = None
 
-
-class LatexResumeSave(BaseModel):
-    title: Optional[str] = "My Resume"
-    template_name: Optional[str] = "classic"
-    latex_source: str
-
-
-class LatexResumeRenderRequest(BaseModel):
-    title: Optional[str] = "resume"
-    latex_source: str

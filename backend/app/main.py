@@ -11,7 +11,7 @@ from app.models.company import Company, Review
 from app.models.mentor import Interview, Mentor
 from app.models.notification import Notification
 from app.models.profile import Profile
-from app.models.resume import LatexResume, Resume
+from app.models.resume import Resume
 from app.models.user import User
 from app.models.job import Job
 
