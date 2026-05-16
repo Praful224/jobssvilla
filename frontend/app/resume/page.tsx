@@ -23,10 +23,12 @@ export default function ResumePage() {
 
   return (
     <AppShell
-      title="Resume Builder"
-      subtitle="Analyze ATS fit, track keywords, and save resume content for matching."
+      title="Resume Studio"
+      subtitle="Analyze ATS fit and save resume drafts."
     >
-      <ResumeBuilder key={resume?.id || "new"} initialResume={resume} />
+      <div className="space-y-6">
+        <ResumeBuilder key={resume?.id || "new"} initialResume={resume} />
+      </div>
     </AppShell>
   );
 }

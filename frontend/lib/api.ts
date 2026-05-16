@@ -109,6 +109,19 @@ export type ResumeRecord = {
   suggestions?: string | null;
 };
 
+export type LatexTemplate = {
+  name: string;
+  label: string;
+  source: string;
+};
+
+export type LatexResumeRecord = {
+  id?: number;
+  title?: string | null;
+  template_name?: string | null;
+  latex_source?: string | null;
+};
+
 type ApiOptions = RequestInit & {
   auth?: boolean;
 };

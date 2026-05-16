@@ -13,3 +13,4 @@ class ResumeUpsert(BaseModel):
     content: str
     skills: Optional[str] = None
     target_role: Optional[str] = None
+

@@ -44,11 +44,16 @@ cd backend
 docker compose up -d
 ```
 
-Install and run the backend:
+Install backend dependencies:
 
 ```bash
 cd backend
 pip install -r requirements.txt
+```
+
+Run the backend:
+
+```bash
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
