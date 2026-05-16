@@ -1,10 +1,10 @@
 "use client"
-
+import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import { useState } from "react"
 
 export default function Home() {
-
+  const router = useRouter()
   const [query, setQuery] = useState("")
   const [jobs, setJobs] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
@@ -94,12 +94,14 @@ export default function Home() {
 
         </div>
 
-        <button className="bg-blue-600 hover:bg-blue-700 px-5 py-2 rounded-xl transition">
+        <button
+         onClick={() => router.push("/login")}
+          className="bg-blue-600 hover:bg-blue-700 px-5 py-2 rounded-xl transition cursor-pointer relative z-[100]"
+        >
 
-          Login
+        Login
 
-        </button>
-
+       </button>
       </nav>
 
       {/* HERO */}

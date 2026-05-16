@@ -15,18 +15,16 @@ Base.metadata.create_all(bind=engine)
 app = FastAPI()
 
 
-# CORS
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://turbo-cod-pq9x9vwjjrxh6jv4-3000.app.github.dev",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-
-# ROOT API
 
 @app.get("/")
 def home():
@@ -35,8 +33,6 @@ def home():
         "message": "JobsVilla Backend Running"
     }
 
-
-# ROUTERS
 
 app.include_router(auth_router)
 
