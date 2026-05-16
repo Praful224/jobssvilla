@@ -1,0 +1,24 @@
+{
+  "name": "JobsVilla",
+  "image": "mcr.microsoft.com/devcontainers/python:3.12-bookworm",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "20"
+    },
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
+  "forwardPorts": [3000, 8000, 5432],
+  "portsAttributes": {
+    "3000": {
+      "label": "Next.js frontend",
+      "onAutoForward": "openPreview"
+    },
+    "8000": {
+      "label": "FastAPI backend"
+    },
+    "5432": {
+      "label": "PostgreSQL"
+    }
+  },
+  "postCreateCommand": "cd backend && pip install -r requirements.txt && cd ../frontend && npm install"
+}

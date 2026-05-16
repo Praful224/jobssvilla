@@ -1,50 +1,25 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import or_
 
 from app.config.database import get_db
 
-from app.models.job import Job
+from app.schemas.job import JobCreate, JobUpdate
 
-from app.schemas.job import JobCreate
+from app.routes.auth import get_current_user
+from app.models.user import User
+from app.services import job_service
 
-from app.routes.auth import oauth2_scheme
-from app.services.auth_service import verify_token
 
-
-router = APIRouter()
+router = APIRouter(tags=["jobs"])
 
 
 @router.post("/jobs")
 def create_job(
     job: JobCreate,
-    token: str = Depends(oauth2_scheme),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
-
-    email = verify_token(token)
-
-    if not email:
-        return {
-            "error": "Invalid token"
-        }
-
-    new_job = Job(
-        company=job.company,
-        role=job.role,
-        location=job.location,
-        salary=job.salary,
-        skills=job.skills,
-        apply_link=job.apply_link,
-        description=job.description,
-        created_by=email
-    )
-
-    db.add(new_job)
-
-    db.commit()
-
-    db.refresh(new_job)
+    new_job = job_service.create_job(db, job, current_user.email)
 
     return {
         "message": "Job created successfully",
@@ -54,56 +29,45 @@ def create_job(
 
 @router.get("/jobs")
 def get_jobs(
-    db: Session = Depends(get_db)
+    q: str | None = None,
+    company: str | None = None,
+    location: str | None = None,
+    skill: str | None = None,
+    limit: int = Query(50, ge=1, le=100),
+    db: Session = Depends(get_db),
 ):
+    return job_service.list_jobs(
+        db,
+        q=q,
+        company=company,
+        location=location,
+        skill=skill,
+        limit=limit,
+    )
 
-    jobs = db.query(Job).all()
-
-    return jobs
 
 
 @router.get("/jobs/search")
 def search_jobs(
     q: str = Query(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
-
-    jobs = db.query(Job).filter(
-
-        or_(
-
-            Job.role.ilike(f"%{q}%"),
-
-            Job.company.ilike(f"%{q}%"),
-
-            Job.skills.ilike(f"%{q}%"),
-
-            Job.location.ilike(f"%{q}%"),
-
-            Job.salary.ilike(f"%{q}%"),
-
-            Job.description.ilike(f"%{q}%")
-
-        )
-
-    ).all()
-
-    return jobs
+    return job_service.list_jobs(db, q=q)
 
 
 @router.get("/jobs/{job_id}")
 def get_single_job(
     job_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
+    return job_service.get_job(db, job_id)
 
-    job = db.query(Job).filter(
-        Job.id == job_id
-    ).first()
 
-    if not job:
-        return {
-            "error": "Job not found"
-        }
-
-    return job
+@router.patch("/jobs/{job_id}")
+def update_job(
+    job_id: int,
+    payload: JobUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return job_service.update_job(db, job_id, payload)
