@@ -44,11 +44,18 @@ cd backend
 docker compose up -d
 ```
 
-Install and run the backend:
+Install backend dependencies and the LaTeX compiler used by the resume PDF builder:
 
 ```bash
 cd backend
 pip install -r requirements.txt
+sudo apt-get update
+sudo apt-get install -y texlive-latex-base texlive-latex-recommended
+```
+
+Run the backend:
+
+```bash
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
@@ -88,6 +95,7 @@ Then restart the Next.js dev server.
 - `GET /saved-jobs`, `POST /saved-jobs`, `DELETE /saved-jobs/{job_id}`
 - `GET /notifications`, `POST /notifications`, `PATCH /notifications/{id}/read`
 - `GET /resume`, `PUT /resume`, `POST /resume/analyze`
+- `GET /resume/latex/templates`, `GET /resume/latex`, `PUT /resume/latex`, `POST /resume/latex/render`
 - `GET /recruiter/dashboard`, `POST /recruiter/jobs`
 - `GET /companies`, `POST /companies`, `POST /companies/reviews`
 - `GET /mentors`, `POST /mentors`, `POST /mentors/interviews`

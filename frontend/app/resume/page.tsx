@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch, getToken, ResumeRecord } from "@/lib/api";
 import { AppShell } from "@/components/AppShell";
+import { LatexResumeBuilder } from "@/components/LatexResumeBuilder";
 import { ResumeBuilder } from "@/components/ResumeBuilder";
 
 export default function ResumePage() {
@@ -23,10 +24,13 @@ export default function ResumePage() {
 
   return (
     <AppShell
-      title="Resume Builder"
-      subtitle="Analyze ATS fit, track keywords, and save resume content for matching."
+      title="Resume Studio"
+      subtitle="Analyze ATS fit, edit LaTeX templates, compile PDFs, and save resume drafts."
     >
-      <ResumeBuilder key={resume?.id || "new"} initialResume={resume} />
+      <div className="space-y-6">
+        <ResumeBuilder key={resume?.id || "new"} initialResume={resume} />
+        <LatexResumeBuilder />
+      </div>
     </AppShell>
   );
 }
