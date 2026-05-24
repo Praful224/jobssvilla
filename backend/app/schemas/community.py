@@ -17,3 +17,7 @@ class SkillGapRequest(BaseModel):
 class CareerAssistantRequest(BaseModel):
     message: str
     target_role: Optional[str] = None
+
+
+class CommentCreate(BaseModel):
+    body: str

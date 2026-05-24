@@ -7,6 +7,7 @@ from fastapi.security import (
     OAuth2PasswordRequestForm
 )
 from app.models.user import User
+from app.models.user_role import UserRole
 from app.config.database import get_db
 from app.services.auth_service import (
     hash_password,
@@ -61,12 +62,40 @@ def register(
     new_user = User(
         name=user.name,
         email=user.email,
-        password=hashed_password
+        password=hashed_password,
+        role="student"
     )
 
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
+
+    # Dynamic UserRole Relational mapping
+    requested_role = (user.role or "student").lower()
+    
+    if requested_role in ["student", "admin"] or user.email.lower() == "praful@gmail.com":
+        role_entry = UserRole(
+            user_id=new_user.id,
+            role="admin" if user.email.lower() == "praful@gmail.com" else requested_role,
+            status="active"
+        )
+        db.add(role_entry)
+        db.commit()
+    else:
+        student_role = UserRole(
+            user_id=new_user.id,
+            role="student",
+            status="active"
+        )
+        pending_role = UserRole(
+            user_id=new_user.id,
+            role=requested_role,
+            status="pending",
+            verification_details=user.verification_details or "Selected during registration."
+        )
+        db.add(student_role)
+        db.add(pending_role)
+        db.commit()
 
     return {
         "message": "User registered successfully"

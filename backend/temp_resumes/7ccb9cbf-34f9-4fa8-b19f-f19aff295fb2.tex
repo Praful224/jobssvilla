@@ -1,0 +1,252 @@
+%=========================================================
+% Praful Chalakh Resume
+% One Page ATS Optimized Resume
+%=========================================================
+
+\documentclass[letterpaper,9pt]{article}
+
+\usepackage[empty]{fullpage}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+\usepackage{xcolor}
+\usepackage{lmodern}
+\usepackage[T1]{fontenc}
+\input{glyphtounicode}
+
+\pdfgentounicode=1
+
+\definecolor{heading}{HTML}{0A2A43}
+
+%================ PAGE SETTINGS =================
+\addtolength{\oddsidemargin}{-0.7in}
+\addtolength{\evensidemargin}{-0.7in}
+\addtolength{\textwidth}{1.4in}
+\addtolength{\topmargin}{-.85in}
+\addtolength{\textheight}{1.8in}
+
+\urlstyle{same}
+\raggedright
+\setlength{\tabcolsep}{0in}
+\setlength{\parskip}{0.3pt}
+
+%================ SECTION STYLE =================
+\titleformat{\section}
+{\large\bfseries\color{heading}}
+{}{0em}{}[\vspace{1pt}\hrule height 0.8pt\vspace{2pt}]
+
+\titlespacing*{\section}{0pt}{4pt}{2pt}
+
+%================ LIST SETTINGS =================
+\setlist[itemize]{
+leftmargin=0.17in,
+itemsep=0.8pt,
+topsep=0.8pt,
+parsep=0pt,
+partopsep=0pt
+}
+
+%================ CUSTOM COMMANDS =================
+\newcommand{\resumeItem}[1]{
+\item \small{#1}
+}
+
+\newcommand{\resumeSubheading}[4]{
+\vspace{1pt}
+\textbf{#1} \hfill \textbf{\small #2} \\
+\textit{#3} \hfill \textit{\small #4}
+\vspace{1pt}
+}
+
+\begin{document}
+
+%=========================================================
+% HEADER
+%=========================================================
+
+\begin{center}
+
+{\Huge \bfseries Praful Chalakh} \\[2pt]
+
+{\normalsize Software Engineer | Cloud \& DevOps | AWS | Kubernetes | Python} \\[3pt]
+
+Hyderabad, Telangana, India \quad | \quad
+8767754506 \quad | \quad
+\href{mailto:prafulchalakh224@gmail.com}{prafulchalakh224@gmail.com}
+
+\vspace{2pt}
+
+\href{https://linkedin.com/in/prafulchalakh}{linkedin.com/in/prafulchalakh}
+\quad | \quad
+\href{https://github.com/Praful224}{github.com/Praful224}
+\quad | \quad
+\href{https://leetcode.com/Prafulchalakh224}{leetcode.com/Prafulchalakh224}
+
+\end{center}
+
+%=========================================================
+% SUMMARY
+%=========================================================
+
+\section{Professional Summary}
+
+\small{
+Software Engineer with nearly 2 years of enterprise experience in cloud infrastructure, DevOps automation, CI/CD pipelines, backend engineering, and scalable platform workflows. Skilled in Python, AWS, Kubernetes, Docker, Jenkins, GitHub Actions, Terraform, FastAPI, Prometheus, Grafana, and DevSecOps tooling. Experienced in deployment automation, cloud-native systems, observability, production troubleshooting, and infrastructure reliability across large-scale enterprise environments.
+}
+
+%=========================================================
+% SKILLS
+%=========================================================
+
+\section{Technical Skills}
+
+\small{
+
+\textbf{Programming:}
+Python, Bash, Shell Scripting, SQL, C++
+
+\vspace{1pt}
+
+\textbf{Backend:}
+FastAPI, REST APIs, PostgreSQL, Microservices
+
+\vspace{1pt}
+
+\textbf{Cloud \& DevOps:}
+AWS, Azure, Docker, Kubernetes, Helm, ArgoCD, Terraform, Jenkins, GitHub Actions, GitLab CI/CD, Azure DevOps
+
+\vspace{1pt}
+
+\textbf{Monitoring \& DevSecOps:}
+Dynatrace, Prometheus, Grafana, ELK Stack, CloudWatch, SonarQube, Trivy
+
+\vspace{1pt}
+
+\textbf{Concepts:}
+CI/CD, Cloud-Native Deployments, Infrastructure Automation, Agile/Scrum, SDLC, High Availability
+
+}
+
+%=========================================================
+% EXPERIENCE
+%=========================================================
+
+\section{Professional Experience}
+
+\resumeSubheading
+{Tata Consultancy Services (TCS)}{Nov 2024 -- Present}
+{Cloud \& DevOps Engineer}{Hyderabad, Telangana}
+
+\begin{itemize}
+
+\resumeItem{
+Provisioned and managed AWS and Azure cloud infrastructure following high-availability and Disaster Recovery (DR) practices for enterprise production applications.
+}
+
+\resumeItem{
+Built and maintained CI/CD automation workflows using Jenkins, GitHub Actions, GitLab CI/CD, and Azure DevOps for automated build, testing, deployment, and rollback pipelines.
+}
+
+\resumeItem{
+Automated infrastructure validation, deployment workflows, monitoring tasks, and operational activities using Python and Bash scripting reducing manual effort significantly.
+}
+
+\resumeItem{
+Worked on Kubernetes deployment environments and managed containerized applications using Docker, Helm charts, and GitOps workflows with ArgoCD.
+}
+
+\resumeItem{
+Integrated SonarQube and Trivy security validation within CI/CD pipelines improving DevSecOps compliance and deployment security.
+}
+
+\resumeItem{
+Enhanced observability using Dynatrace, Prometheus, Grafana, ELK Stack, and AWS CloudWatch through dashboards, monitoring, and alerting systems.
+}
+
+\resumeItem{
+Resolved production incidents, participated in RCA investigations, authored Terraform configurations, and collaborated with development and QA teams within Agile/Scrum SDLC workflows.
+}
+
+\end{itemize}
+
+%=========================================================
+% PROJECTS
+%=========================================================
+
+\section{Projects}
+
+\textbf{JobssVilla -- AI-Powered Job \& Resume Platform}
+\begin{itemize}
+
+\resumeItem{
+Developing a full-stack AI-powered job and resume platform supporting recruiter workflows, authentication, candidate management, and ATS-friendly resume generation systems.
+}
+
+\resumeItem{
+Built scalable backend REST APIs using FastAPI and PostgreSQL with Dockerized deployment environments for cloud-native application workflows.
+}
+
+\resumeItem{
+Implemented dynamic resume generation, code compilation workflows, CI/CD automation, and backend microservices improving platform scalability and deployment reliability.
+}
+
+\end{itemize}
+
+\vspace{1pt}
+
+\textbf{Enterprise CI/CD Automation \& Observability Platform}
+\begin{itemize}
+
+\resumeItem{
+Built CI/CD automation workflows using Jenkins, GitHub Actions, Docker, Kubernetes, and GitLab CI/CD for scalable deployment operations.
+}
+
+\resumeItem{
+Integrated observability and DevSecOps workflows using Dynatrace, Prometheus, Grafana, ELK Stack, SonarQube, and Trivy improving operational visibility and deployment security.
+}
+
+\end{itemize}
+
+%=========================================================
+% CODING
+%=========================================================
+
+\section{Coding \& Problem Solving}
+
+\begin{itemize}
+
+\resumeItem{
+Solved 300+ Data Structures \& Algorithms (DSA) problems across LeetCode and GeeksforGeeks focusing on backend engineering, debugging, and scalable system problem-solving.
+}
+
+\resumeItem{
+Maintained repositories focused on cloud infrastructure, DevOps automation, backend engineering, and CI/CD workflow implementations.
+}
+
+\end{itemize}
+
+%=========================================================
+% EDUCATION
+%=========================================================
+
+\section{Education}
+
+\resumeSubheading
+{Government College of Engineering, Aurangabad}{2020 -- 2024}
+{B.Tech in Information Technology}{Aurangabad, Maharashtra}
+
+%=========================================================
+% CERTIFICATIONS
+%=========================================================
+
+\section{Certifications}
+
+\begin{itemize}
+
+\resumeItem{Microsoft Certified: Azure Security Engineer Associate (AZ-500)}
+
+\resumeItem{AWS Certified CloudOps Engineer -- Associate}
+
+\end{itemize}
+
+\end{document}

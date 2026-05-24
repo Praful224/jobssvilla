@@ -21,7 +21,7 @@ def get_profile(
     db: Session = Depends(get_db),
 ):
     profile = get_or_create_profile(db, current_user)
-    return profile_to_dict(profile, current_user)
+    return profile_to_dict(profile, current_user, db)
 
 
 @router.put("/profile")
@@ -31,4 +31,4 @@ def save_profile(
     db: Session = Depends(get_db),
 ):
     profile = update_profile(db, current_user, payload)
-    return profile_to_dict(profile, current_user)
+    return profile_to_dict(profile, current_user, db)

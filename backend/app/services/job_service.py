@@ -72,3 +72,9 @@ def update_job(db: Session, job_id: int, payload: JobUpdate) -> Job:
     db.commit()
     db.refresh(job)
     return job
+
+
+def delete_job(db: Session, job_id: int) -> None:
+    job = get_job(db, job_id)
+    db.delete(job)
+    db.commit()
