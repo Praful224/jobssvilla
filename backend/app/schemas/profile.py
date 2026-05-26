@@ -16,3 +16,4 @@ class ProfileUpdate(BaseModel):
     github_url: Optional[str] = None
     linkedin_url: Optional[str] = None
     resume_url: Optional[str] = None
+    theme: Optional[str] = None

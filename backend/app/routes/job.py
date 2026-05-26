@@ -71,3 +71,13 @@ def update_job(
     db: Session = Depends(get_db),
 ):
     return job_service.update_job(db, job_id, payload)
+
+
+@router.delete("/jobs/{job_id}")
+def delete_single_job(
+    job_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    job_service.delete_job(db, job_id)
+    return {"message": "Job opportunity deleted successfully"}

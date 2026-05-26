@@ -1,21 +1,131 @@
 @import "tailwindcss";
 
-:root {
-  --background: #09090b;
+@variant dark (html[data-theme="dark"], html[data-theme="dark"] *);
+
+/* ═══════════════════════════════════════════════════
+   THEME VARIABLES
+═══════════════════════════════════════════════════ */
+:root,
+html[data-theme="light"] {
+  --background: #f4f6fb;
+  --foreground: #000000; /* Solid bold black for maximum readability */
+  --grid-color: rgba(47, 84, 235, 0.045);
+  --glass-bg: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(0, 0, 0, 0.12);
+}
+
+html[data-theme="light"] {
+  /* Force high-contrast bold black text visibility on hardcoded light/grey classes in Light Mode */
+  .text-white,
+  .text-zinc-50,
+  .text-zinc-100,
+  .text-zinc-200,
+  .text-zinc-300,
+  .text-zinc-400,
+  .text-zinc-500,
+  .text-slate-400,
+  .text-slate-500,
+  .text-slate-600 {
+    color: #000000 !important;
+    font-weight: 700; /* Higher intensity font weight for maximum readability */
+  }
+
+  /* Specific bypass for dark buttons/elements in light mode to keep text white */
+  .text-white-force {
+    color: #ffffff !important;
+  }
+
+  /* Make subtext/descriptions readable and crisp */
+  p, 
+  .text-zinc-500,
+  .text-zinc-400 {
+    color: #1a1a1a !important;
+    font-weight: 600 !important;
+  }
+
+  /* Make borders and transparent background cards perfectly visible */
+  .border-white\/10,
+  .border-white\/5,
+  .border-white\/20 {
+    border-color: rgba(0, 0, 0, 0.12) !important;
+  }
+  
+  .bg-white\/\[0\.02\],
+  .bg-white\/\[0\.01\],
+  .bg-white\/\[0\.03\],
+  .bg-white\/\[0\.05\],
+  .bg-white\/5,
+  .bg-zinc-950\/20,
+  .bg-zinc-950\/40,
+  .bg-zinc-950\/60,
+  .bg-zinc-950\/70 {
+    background-color: rgba(255, 255, 255, 0.75) !important;
+    backdrop-filter: blur(20px) !important;
+  }
+
+  input,
+  select,
+  textarea {
+    color: #000000 !important;
+    font-weight: 600 !important;
+    background-color: rgba(255, 255, 255, 0.9) !important;
+    border-color: rgba(0, 0, 0, 0.2) !important;
+  }
+}
+
+html[data-theme="dark"] {
+  --background: #060608;
   --foreground: #f4f4f5;
+  --grid-color: rgba(255, 255, 255, 0.005);
+  --glass-bg: rgba(255, 255, 255, 0.02);
+  --glass-border: rgba(255, 255, 255, 0.06);
+}
+
+html[data-theme="emerald"] {
+  --background: #022c22;
+  --foreground: #f0fdf4;
+  --grid-color: rgba(240, 253, 244, 0.005);
+  --glass-bg: rgba(240, 253, 244, 0.02);
+  --glass-border: rgba(240, 253, 244, 0.06);
+}
+
+html[data-theme="ocean"] {
+  --background: #0c4a6e;
+  --foreground: #f0f9ff;
+  --grid-color: rgba(240, 249, 255, 0.005);
+  --glass-bg: rgba(240, 249, 255, 0.02);
+  --glass-border: rgba(240, 249, 255, 0.06);
+}
+
+html[data-theme="purple"] {
+  --background: #1e1b4b;
+  --foreground: #faf5ff;
+  --grid-color: rgba(250, 245, 255, 0.005);
+  --glass-bg: rgba(250, 245, 255, 0.02);
+  --glass-border: rgba(250, 245, 255, 0.06);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-plus-jakarta);
+  --font-mono: var(--font-jetbrains-mono);
 }
 
+/* ═══════════════════════════════════════════════════
+   BASE BODY
+   ═══════════════════════════════════════════════════ */
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), sans-serif;
+  background-image:
+    radial-gradient(at 5% 5%, rgba(47, 84, 235, 0.08) 0px, transparent 65%),
+    radial-gradient(at 95% 5%, rgba(16, 185, 129, 0.05) 0px, transparent 55%),
+    radial-gradient(at 50% 95%, rgba(99, 102, 241, 0.04) 0px, transparent 50%),
+    linear-gradient(var(--grid-color) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 40px 40px, 40px 40px;
 }
 
 button,
@@ -24,4 +134,499 @@ input,
 select,
 textarea {
   letter-spacing: 0;
+}
+
+/* ═══════════════════════════════════════════════════
+   GLASSMORPHISM & GLOW
+   ═══════════════════════════════════════════════════ */
+.glass-3d {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 8px 32px rgba(31, 38, 135, 0.03), inset 0 1px 1px rgba(255, 255, 255, 0.8);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+html[data-theme="dark"] .glass-3d {
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.05);
+}
+
+.glass-3d:hover {
+  transform: translateY(-3px) scale(1.005);
+  border-color: rgba(47, 84, 235, 0.25);
+  box-shadow: 0 16px 40px rgba(31, 38, 135, 0.06), inset 0 1px 1px rgba(255, 255, 255, 0.9);
+}
+
+html[data-theme="dark"] .glass-3d:hover {
+  border-color: rgba(52, 211, 153, 0.35);
+  box-shadow:
+    0 15px 35px -10px rgba(0, 0, 0, 0.8),
+    0 0 20px 0px rgba(52, 211, 153, 0.15),
+    inset 0 1px 1px rgba(255, 255, 255, 0.1);
+}
+
+.glass-touch-glow {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  transition: all 0.3s ease;
+}
+
+/* ═══════════════════════════════════════════════════
+   CARD GLOW VARIANTS
+═══════════════════════════════════════════════════ */
+.card-glow-cyan {
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.card-glow-cyan:hover {
+  transform: translateY(-4px) scale(1.01);
+  border-color: rgba(34, 211, 238, 0.35);
+  box-shadow:
+    0 15px 35px -10px rgba(0, 0, 0, 0.8),
+    0 0 20px 0px rgba(34, 211, 238, 0.15),
+    inset 0 1px 1px rgba(255, 255, 255, 0.1);
+}
+
+.card-glow-amber {
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.card-glow-amber:hover {
+  transform: translateY(-4px) scale(1.01);
+  border-color: rgba(252, 211, 77, 0.35);
+  box-shadow:
+    0 15px 35px -10px rgba(0, 0, 0, 0.8),
+    0 0 20px 0px rgba(252, 211, 77, 0.15),
+    inset 0 1px 1px rgba(255, 255, 255, 0.1);
+}
+
+.card-glow-emerald {
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.card-glow-emerald:hover {
+  transform: translateY(-4px) scale(1.01);
+  border-color: rgba(52, 211, 153, 0.35);
+  box-shadow:
+    0 15px 35px -10px rgba(0, 0, 0, 0.8),
+    0 0 20px 0px rgba(52, 211, 153, 0.15),
+    inset 0 1px 1px rgba(255, 255, 255, 0.1);
+}
+
+.card-glow-purple {
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.card-glow-purple:hover {
+  transform: translateY(-4px) scale(1.01);
+  border-color: rgba(168, 85, 247, 0.35);
+  box-shadow:
+    0 15px 35px -10px rgba(0, 0, 0, 0.8),
+    0 0 20px 0px rgba(168, 85, 247, 0.15),
+    inset 0 1px 1px rgba(255, 255, 255, 0.1);
+}
+
+/* ═══════════════════════════════════════════════════
+   NEON BUTTON
+═══════════════════════════════════════════════════ */
+.neon-btn {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+.neon-btn::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+  transform: rotate(45deg);
+  transition: all 0.5s ease;
+  opacity: 0;
+}
+.neon-btn:hover::after {
+  left: 120%;
+  opacity: 1;
+}
+
+/* ═══════════════════════════════════════════════════
+   CYBER GRID
+═══════════════════════════════════════════════════ */
+.cyber-grid {
+  position: relative;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.015) 1.5px, transparent 1.5px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1.5px, transparent 1.5px);
+  background-size: 50px 50px;
+}
+
+/* ═══════════════════════════════════════════════════
+   AMBIENT FLOATING BLOBS
+═══════════════════════════════════════════════════ */
+.ambient-blob-1 {
+  position: absolute;
+  top: 10%;
+  left: -5%;
+  width: 450px;
+  height: 450px;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.12) 0%, transparent 70%);
+  filter: blur(60px);
+  z-index: -10;
+  animation: float-blob-1 25s infinite alternate ease-in-out;
+  pointer-events: none;
+}
+
+.ambient-blob-2 {
+  position: absolute;
+  bottom: 15%;
+  right: -5%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(6, 182, 212, 0.12) 0%, transparent 70%);
+  filter: blur(80px);
+  z-index: -10;
+  animation: float-blob-2 30s infinite alternate ease-in-out;
+  pointer-events: none;
+}
+
+.ambient-blob-3 {
+  position: absolute;
+  top: 45%;
+  left: 30%;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.08) 0%, transparent 70%);
+  filter: blur(70px);
+  z-index: -10;
+  animation: float-blob-3 28s infinite alternate ease-in-out;
+  pointer-events: none;
+}
+
+.ambient-blob-orange {
+  position: absolute;
+  top: 20%;
+  right: 10%;
+  width: 380px;
+  height: 380px;
+  background: radial-gradient(circle, rgba(249, 115, 22, 0.10) 0%, transparent 70%);
+  filter: blur(70px);
+  z-index: -10;
+  animation: float-blob-2 22s infinite alternate ease-in-out;
+  pointer-events: none;
+}
+
+@keyframes float-blob-1 {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(60px, 40px) scale(1.1); }
+  100% { transform: translate(-40px, 80px) scale(0.9); }
+}
+
+@keyframes float-blob-2 {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-80px, -60px) scale(1.2); }
+  100% { transform: translate(40px, 30px) scale(0.8); }
+}
+
+@keyframes float-blob-3 {
+  0% { transform: translate(0, 0) scale(1.05); }
+  50% { transform: translate(30px, -50px) scale(0.9); }
+  100% { transform: translate(-50px, 20px) scale(1.1); }
+}
+
+/* ═══════════════════════════════════════════════════
+   FIGMA DECORATIVE LINES & BLURS
+═══════════════════════════════════════════════════ */
+.figma-line-slant-left {
+  position: absolute;
+  width: 1px;
+  height: 100vh;
+  background: linear-gradient(to bottom, transparent, rgba(249, 115, 22, 0.2), transparent);
+  transform: rotate(-30deg);
+  transform-origin: top left;
+  pointer-events: none;
+}
+
+.figma-line-slant-right {
+  position: absolute;
+  width: 1px;
+  height: 100vh;
+  background: linear-gradient(to bottom, transparent, rgba(249, 115, 22, 0.15), transparent);
+  transform: rotate(30deg);
+  transform-origin: top right;
+  pointer-events: none;
+}
+
+.figma-line-vertical-90 {
+  position: absolute;
+  width: 1px;
+  height: 100vh;
+  background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.04), transparent);
+  pointer-events: none;
+}
+
+.figma-line-horizontal {
+  position: absolute;
+  width: 100vw;
+  height: 1px;
+  background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.04), transparent);
+  pointer-events: none;
+}
+
+.figma-line-rect-860 {
+  position: absolute;
+  width: 280px;
+  height: 180px;
+  border: 1px solid rgba(249, 115, 22, 0.12);
+  border-radius: 12px;
+  transform: rotate(-12deg);
+  pointer-events: none;
+}
+
+.figma-blur-circle-1 {
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.12) 0%, transparent 70%);
+  filter: blur(80px);
+  pointer-events: none;
+}
+
+.figma-blur-circle-2 {
+  width: 500px;
+  height: 500px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(6, 182, 212, 0.1) 0%, transparent 70%);
+  filter: blur(60px);
+  pointer-events: none;
+}
+
+.figma-blur-circle-radial {
+  width: 900px;
+  height: 900px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(249, 115, 22, 0.05) 0%, transparent 70%);
+  filter: blur(100px);
+  pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════════════
+   FIGMA GLASS BUTTON
+═══════════════════════════════════════════════════ */
+.figma-btn-glass {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 9999px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  backdrop-filter: blur(8px);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.figma-btn-glass:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.20);
+  color: white;
+  transform: translateY(-1px);
+}
+
+/* ═══════════════════════════════════════════════════
+   FIGMA BROWSE APP (3D Viewport card)
+═══════════════════════════════════════════════════ */
+.figma-browse-app {
+  background: linear-gradient(135deg, rgba(39, 39, 42, 0.8) 0%, rgba(24, 24, 27, 0.95) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+}
+
+/* ═══════════════════════════════════════════════════
+   3D PERSPECTIVE TRANSFORMS
+═══════════════════════════════════════════════════ */
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+.perspective-2000 {
+  perspective: 2000px;
+}
+
+.transition-3d {
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-style: preserve-3d;
+}
+
+/* ═══════════════════════════════════════════════════
+   ANIMATIONS
+═══════════════════════════════════════════════════ */
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.animate-spin-slow {
+  animation: spin-slow 8s linear infinite;
+}
+
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(100%) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+.animate-slide-in {
+  animation: slide-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes pulse-radar {
+  0% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.7); opacity: 1; }
+  70% { box-shadow: 0 0 0 10px rgba(249, 115, 22, 0); opacity: 0.5; }
+  100% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0); opacity: 1; }
+}
+.pulse-radar-orange {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(249, 115, 22, 0.9);
+  animation: pulse-radar 2s infinite;
+  display: inline-block;
+}
+
+@keyframes hero-float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-12px); }
+}
+.animate-hero-float {
+  animation: hero-float 6s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+@keyframes count-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-count-up {
+  animation: count-up 0.6s ease-out forwards;
+}
+
+/* ═══════════════════════════════════════════════════
+   CYBER BORDER FLOW
+═══════════════════════════════════════════════════ */
+.cyber-border-flow {
+  position: relative;
+}
+.cyber-border-flow::before {
+  content: '';
+  position: absolute;
+  inset: -1.5px;
+  border-radius: 1.5rem;
+  padding: 1.5px;
+  background: linear-gradient(90deg, #10b981, #06b6d4, #f59e0b, #ec4899, #10b981);
+  background-size: 300% 300%;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: border-flow-animation 8s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes border-flow-animation {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* ═══════════════════════════════════════════════════
+   TILT CARD
+═══════════════════════════════════════════════════ */
+.tilt-card-inner {
+  transition: transform 0.15s ease-out;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+/* ═══════════════════════════════════════════════════
+   SCROLLBAR
+═══════════════════════════════════════════════════ */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--glass-border);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(47, 84, 235, 0.2);
+}
+
+/* ═══════════════════════════════════════════════════
+   VANTA GLOBE GLOBAL BACKGROUND
+   ═══════════════════════════════════════════════════ */
+.vanta-globe-background {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.9;
+}
+
+/* ═══════════════════════════════════════════════════
+   RESUME BUILDER CUSTOM SEMANTIC THEMING
+   ═══════════════════════════════════════════════════ */
+.resume-accordion-wrapper {
+  background-color: rgba(255, 255, 255, 0.45) !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+  transition: all 0.25s ease;
+}
+html[data-theme="dark"] .resume-accordion-wrapper {
+  background-color: rgba(255, 255, 255, 0.01) !important;
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+.resume-accordion-header {
+  background-color: rgba(0, 0, 0, 0.02) !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
+  color: #000000 !important;
+  font-weight: 800 !important;
+}
+html[data-theme="dark"] .resume-accordion-header {
+  background-color: rgba(255, 255, 255, 0.03) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+  color: #ffffff !important;
+}
+
+.resume-section-card {
+  background-color: #ffffff !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02) !important;
+  transition: all 0.25s ease;
+}
+html[data-theme="dark"] .resume-section-card {
+  background-color: rgba(255, 255, 255, 0.02) !important;
+  border-color: rgba(255, 255, 255, 0.06) !important;
+  box-shadow: none !important;
+}
+
+/* Unselected dark navbar/tabs text color bypass globally */
+.text-zinc-400-force {
+  color: #a1a1aa !important;
 }

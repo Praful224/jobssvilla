@@ -22,6 +22,7 @@ class Profile(Base):
     github_url = Column(String, nullable=True)
     linkedin_url = Column(String, nullable=True)
     resume_url = Column(String, nullable=True)
+    theme = Column(String, default="dark", nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(
         DateTime,

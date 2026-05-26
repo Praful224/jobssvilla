@@ -16,7 +16,10 @@ from app.services.market_service import (
     list_companies,
     list_mentors,
     list_posts,
+    list_interviews,
+    like_post,
 )
+
 
 
 router = APIRouter(tags=["market"])
@@ -68,6 +71,15 @@ def add_interview(
     return create_interview(db, current_user, payload)
 
 
+@router.get("/mentors/interviews")
+def get_user_interviews(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return list_interviews(db, current_user)
+
+
+
 @router.get("/community/posts")
 def community_posts(db: Session = Depends(get_db)):
     return list_posts(db)
@@ -80,3 +92,13 @@ def add_community_post(
     db: Session = Depends(get_db),
 ):
     return create_post(db, current_user, payload)
+
+
+@router.post("/community/posts/{post_id}/like")
+def add_like_to_post(
+    post_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return like_post(db, current_user, post_id)
+
