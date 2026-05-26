@@ -99,3 +99,61 @@ def verify_user_role(
     return {
         "message": f"Role request successfully {'approved' if payload.approve else 'rejected'}!"
     }
+
+
+class ToggleBlockPayload(BaseModel):
+    user_id: int
+    block: bool
+
+
+@router.get("/admin/users")
+def get_all_users(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Fetch all users inside the system for administration."""
+    if current_user.role != "admin" and current_user.email != "praful@gmail.com" and current_user.email != "admin@jobsvilla.com":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied: Admin privileges required."
+        )
+
+    users = db.query(User).all()
+    return [
+        {
+            "id": u.id,
+            "name": u.name,
+            "email": u.email,
+            "role": u.role,
+        }
+        for u in users
+    ]
+
+
+@router.post("/admin/toggle-block-user")
+def toggle_block_user(
+    payload: ToggleBlockPayload,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Block or unblock a user by setting their role."""
+    if current_user.role != "admin" and current_user.email != "praful@gmail.com" and current_user.email != "admin@jobsvilla.com":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied: Admin privileges required."
+        )
+
+    user = db.query(User).filter(User.id == payload.user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+
+    if user.id == current_user.id:
+        raise HTTPException(status_code=400, detail="You cannot block yourself.")
+
+    if payload.block:
+        user.role = "blocked"
+    else:
+        user.role = "student"
+
+    db.commit()
+    return {"message": f"User successfully {'blocked' if payload.block else 'unblocked'}!"}

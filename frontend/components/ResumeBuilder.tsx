@@ -135,25 +135,7 @@ export function ResumeBuilder({ initialResume }: ResumeBuilderProps) {
   const [jdMatching, setJdMatching] = useState(false);
   const [jdResult, setJdResult] = useState<any | null>(null);
 
-  // Tab 3: Cryptographic Claims Vault States
-  const [claimInput, setClaimInput] = useState("");
-  const [claimVerifying, setClaimVerifying] = useState(false);
-  const [verifiedClaims, setVerifiedClaims] = useState<any[]>([]);
-  const [claimStatus, setClaimStatus] = useState("");
 
-  // Load claims on mount
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const savedClaims = localStorage.getItem("jobsvilla_verified_claims");
-      if (savedClaims) {
-        try {
-          setVerifiedClaims(JSON.parse(savedClaims));
-        } catch (e) {
-          console.error("Failed to load claims:", e);
-        }
-      }
-    }
-  }, []);
 
   // Update field helper
   const updateHeaderField = (field: string, val: string) => {
@@ -519,36 +501,7 @@ export function ResumeBuilder({ initialResume }: ResumeBuilderProps) {
     }
   };
 
-  // Import Cryptographic Claims to Vault
-  const verifyClaimBlock = async () => {
-    if (!claimInput.trim()) {
-      setClaimStatus("Please paste a cryptographic claim JSON block.");
-      return;
-    }
-    setClaimVerifying(true);
-    setClaimStatus("Decrypting and verifying credential signature...");
-    try {
-      const data = await apiFetch<any>("/resume/verify-claim", {
-        method: "POST",
-        headers: jsonHeaders(),
-        body: JSON.stringify({ claim_json: claimInput })
-      });
 
-      if (data.verified) {
-        const updated = [...verifiedClaims.filter(c => c.signature !== data.claim.signature), data.claim];
-        setVerifiedClaims(updated);
-        localStorage.setItem("jobsvilla_verified_claims", JSON.stringify(updated));
-        setClaimStatus("SUCCESS: Cryptographic verification validated! Badge applied.");
-        setClaimInput("");
-      } else {
-        setClaimStatus(`REJECTED: ${data.error || "Signature invalid."}`);
-      }
-    } catch (e: any) {
-      setClaimStatus(`ERROR: ${e.message || "Failed to contact verification server."}`);
-    } finally {
-      setClaimVerifying(false);
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -576,20 +529,7 @@ export function ResumeBuilder({ initialResume }: ResumeBuilderProps) {
           <Cpu size={16} />
           Synonym-Aware JD Matcher
         </button>
-        <button
-          onClick={() => setActiveTab("claims-vault")}
-          className={`flex items-center gap-2 px-5 py-3 text-sm font-bold border-b-2 transition ${
-            activeTab === "claims-vault"
-              ? "border-emerald-400 text-emerald-400"
-              : "border-transparent text-zinc-400 hover:text-white"
-          }`}
-        >
-          <ShieldCheck size={16} />
-          Verified Claims Vault
-          {verifiedClaims.length > 0 && (
-            <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-          )}
-        </button>
+
       </div>
 
       {/* Main Workspace Panels */}
@@ -1443,134 +1383,7 @@ export function ResumeBuilder({ initialResume }: ResumeBuilderProps) {
         </div>
       )}
 
-      {activeTab === "claims-vault" && (
-        <div className="grid gap-6 xl:grid-cols-[1fr_420px]">
-          {/* Claim block pasting */}
-          <section className="glass-3d bg-white/[0.02] p-6 rounded-2xl border border-white/10 space-y-4">
-            <h2 className="text-lg font-bold text-white flex items-center gap-2">
-              <ShieldCheck size={20} className="text-emerald-400 animate-pulse" />
-              Verified Claims Vault
-            </h2>
-            <p className="text-xs text-zinc-400 leading-relaxed">
-              JobsVilla operates a decentralized professional trust network. Pasting cryptographically signed credential JSON blocks (issued by verified corporate recruiters or mentors) validates key accomplishments and grants profile verification badges.
-            </p>
 
-            <div className="space-y-3 pt-2">
-              <label className="text-[10px] uppercase font-bold text-zinc-400 block mb-1">
-                Signed Claim JSON Block
-              </label>
-              <textarea
-                value={claimInput}
-                onChange={(e) => setClaimInput(e.target.value)}
-                rows={10}
-                placeholder={`Paste the signed JSON block here. Example:
-{
-  "candidate_name": "Praful",
-  "candidate_email": "praful@example.com",
-  "issuer_name": "Google",
-  "issuer_domain": "google.com",
-  "claim_title": "Software Engineering Intern",
-  "skills": ["Python", "FastAPI", "Docker"],
-  "tenure": "Jan 2026 - May 2026",
-  "issued_at": "2026-05-23",
-  "signature": "sig_mock_signature_code"
-}`}
-                className="w-full rounded-xl border border-white/10 bg-zinc-950/60 px-4 py-3.5 text-xs leading-relaxed text-emerald-300 outline-none focus:border-emerald-500 transition resize-y font-mono"
-              />
-            </div>
-
-            <div className="pt-2 flex items-center justify-between gap-4">
-              <button
-                onClick={verifyClaimBlock}
-                disabled={claimVerifying}
-                className="rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 px-6 py-3 text-sm font-bold text-zinc-950 flex items-center gap-2 hover:brightness-110 active:scale-95 transition"
-              >
-                {claimVerifying ? (
-                  <RefreshCw size={14} className="animate-spin" />
-                ) : (
-                  <ShieldCheck size={14} />
-                )}
-                Verify & Vault Claim
-              </button>
-
-              {claimStatus && (
-                <span className="text-xs font-semibold text-zinc-300 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 max-w-sm leading-relaxed">
-                  {claimStatus}
-                </span>
-              )}
-            </div>
-          </section>
-
-          {/* Active verified claims list */}
-          <aside className="space-y-6">
-            <div className="glass-3d p-6 rounded-2xl border border-white/10 flex flex-col justify-between h-full min-h-[420px]">
-              <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-zinc-400 block mb-4">
-                  Verified Talent Badges ({verifiedClaims.length})
-                </span>
-
-                {verifiedClaims.length > 0 ? (
-                  <div className="space-y-4 max-h-[380px] overflow-y-auto pr-1">
-                    {verifiedClaims.map((claim: any, idx: number) => (
-                      <div
-                        key={idx}
-                        className="group relative p-4 rounded-xl border border-emerald-400/20 bg-emerald-400/[0.02] hover:bg-emerald-400/[0.04] transition duration-200 space-y-2 overflow-hidden shadow-md shadow-emerald-500/5"
-                      >
-                        {/* High-fidelity Neon Pulse badge */}
-                        <div className="flex justify-between items-start">
-                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-400/10 border border-emerald-400/30 px-2 py-0.5 text-[8px] font-bold uppercase tracking-widest text-emerald-300">
-                            <ShieldCheck size={10} className="animate-pulse" />
-                            Verified Claims
-                          </span>
-                          <span className="text-[9px] text-zinc-500 font-bold uppercase">
-                            {claim.tenure}
-                          </span>
-                        </div>
-
-                        <div>
-                          <h4 className="font-extrabold text-sm text-white tracking-tight">
-                            {claim.claim_title}
-                          </h4>
-                          <p className="text-[10px] text-zinc-400 font-semibold mt-0.5">
-                            Issued by {claim.issuer_name} (<span className="text-emerald-400 font-bold">{claim.issuer_domain}</span>)
-                          </p>
-                        </div>
-
-                        <div className="flex flex-wrap gap-1 pt-1">
-                          {claim.skills.map((s: string) => (
-                            <span key={s} className="rounded bg-white/5 border border-white/5 px-2 py-0.5 text-[9px] text-zinc-400 uppercase font-bold">
-                              {s}
-                            </span>
-                          ))}
-                        </div>
-
-                        <div className="pt-2 border-t border-white/5 flex justify-between items-center text-[8px] text-zinc-500">
-                          <span>Issued: {claim.issued_at}</span>
-                          <span className="truncate max-w-[140px] text-emerald-400/60 font-mono">
-                            Sig: {claim.signature}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex-1 flex flex-col items-center justify-center text-center p-6 min-h-[250px]">
-                    <ShieldCheck size={32} className="text-zinc-700 animate-pulse mb-3" />
-                    <h5 className="font-bold text-sm text-zinc-400">Claims Vault Empty</h5>
-                    <p className="text-xs text-zinc-600 mt-2 max-w-[200px] leading-relaxed">
-                      Verify cryptographically signed claims from former employers to unlock glowing Verified profile badges.
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              <div className="mt-4 pt-4 border-t border-white/5 text-[9px] text-zinc-600 leading-relaxed">
-                🔒 Cryptographic claims contain verified digital signatures guaranteeing they cannot be modified.
-              </div>
-            </div>
-          </aside>
-        </div>
-      )}
     </div>
   );
 }

@@ -49,7 +49,7 @@ export default function AdminPage() {
   const router = useRouter();
   
   // Navigation & Workspace Tabs
-  const [activeTab, setActiveTab] = useState<"jobs" | "broadcast" | "claims" | "vetting">("jobs");
+  const [activeTab, setActiveTab] = useState<"jobs" | "broadcast" | "vetting" | "users">("jobs");
   
   // Job opportunities state
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -57,11 +57,18 @@ export default function AdminPage() {
   const [statusMsg, setStatusMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [refreshing, setRefreshing] = useState(false);
+  const [quickPaste, setQuickPaste] = useState("");
 
   // Candidate directory state
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loadingCandidates, setLoadingCandidates] = useState(false);
+
+  // General Users directory state
+  const [allUsers, setAllUsers] = useState<any[]>([]);
+  const [userSearchQuery, setUserSearchQuery] = useState("");
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [userActionStatus, setUserActionStatus] = useState("");
 
   // Direct and Global Alert states
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
@@ -72,17 +79,7 @@ export default function AdminPage() {
   const [broadcastStatus, setBroadcastStatus] = useState("");
   const [broadcastError, setBroadcastError] = useState("");
 
-  // Claim Generator Form State
-  const [claimName, setClaimName] = useState("");
-  const [claimEmail, setClaimEmail] = useState("");
-  const [claimTitle, setClaimTitle] = useState("");
-  const [claimSkills, setClaimSkills] = useState("");
-  const [claimTenure, setClaimTenure] = useState("");
-  const [claimIssuer, setClaimIssuer] = useState("JobsVilla Hub");
-  const [claimDomain, setClaimDomain] = useState("jobsvilla.com");
-  
-  const [generatedJson, setGeneratedJson] = useState("");
-  const [copied, setCopied] = useState(false);
+
 
   // Vetting Queue State
   const [vettingQueue, setVettingQueue] = useState<any[]>([]);
@@ -97,6 +94,7 @@ export default function AdminPage() {
     loadJobs();
     loadCandidates();
     loadVettingQueue();
+    loadAllUsers();
   }, [router]);
 
   const loadJobs = async () => {
@@ -121,6 +119,38 @@ export default function AdminPage() {
       console.error("Failed to load candidates directory", e);
     } finally {
       setLoadingCandidates(false);
+    }
+  };
+
+  const loadAllUsers = async () => {
+    setLoadingUsers(true);
+    try {
+      const data = await apiFetch<any[]>("/admin/users", { auth: true });
+      setAllUsers(Array.isArray(data) ? data : []);
+    } catch (e) {
+      console.error("Failed to load users directory", e);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  const handleToggleBlock = async (userId: number, currentBlockStatus: boolean) => {
+    setUserActionStatus("");
+    try {
+      const res: any = await apiFetch("/admin/toggle-block-user", {
+        auth: true,
+        method: "POST",
+        headers: jsonHeaders(),
+        body: JSON.stringify({ user_id: userId, block: !currentBlockStatus })
+      });
+      setUserActionStatus(res?.message || "User status updated successfully!");
+      loadAllUsers();
+      loadCandidates();
+      setTimeout(() => setUserActionStatus(""), 3500);
+    } catch (e: any) {
+      console.error("Failed to block/unblock user", e);
+      setUserActionStatus(e.message || "Block action failed.");
+      setTimeout(() => setUserActionStatus(""), 3500);
     }
   };
 
@@ -154,6 +184,117 @@ export default function AdminPage() {
       setVettingStatusMsg("Action failed. Vetting process issue.");
       setTimeout(() => setVettingStatusMsg(""), 3500);
     }
+  };
+
+  const handleQuickImport = () => {
+    if (!quickPaste.trim()) return;
+
+    let company = "";
+    let role = "";
+    let location = "";
+    let salary = "";
+    let skills: string[] = [];
+    let description = quickPaste.trim();
+
+    // 1. Check if it's a URL
+    if (quickPaste.startsWith("http://") || quickPaste.startsWith("https://")) {
+      const url = quickPaste.toLowerCase();
+      
+      // Attempt to extract company and role from URL slugs
+      if (url.includes("linkedin.com/jobs")) {
+        const match = url.match(/view\/([a-z0-9-]+)/);
+        if (match && match[1]) {
+          const parts = match[1].split("-");
+          const cleanedParts = parts.filter(p => !/^\d+$/.test(p));
+          
+          const atIndex = cleanedParts.indexOf("at");
+          if (atIndex !== -1) {
+            role = cleanedParts.slice(0, atIndex).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+            company = cleanedParts.slice(atIndex + 1).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+          } else {
+            role = cleanedParts.map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+          }
+        }
+      } else {
+        try {
+          const parsed = new URL(quickPaste);
+          const hostnameParts = parsed.hostname.split(".");
+          company = hostnameParts.length > 2 ? hostnameParts[1] : hostnameParts[0];
+          company = company.charAt(0).toUpperCase() + company.slice(1);
+          
+          const pathParts = parsed.pathname.split(/[-_/]/).filter(Boolean);
+          role = pathParts.map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+        } catch (e) {}
+      }
+      
+      location = "Remote";
+    } else {
+      // 2. Parse as Raw Text
+      const text = quickPaste;
+      const lines = text.split("\n");
+      lines.forEach(line => {
+        const lower = line.toLowerCase();
+        if (lower.startsWith("company:") || lower.startsWith("employer:")) {
+          company = line.split(":")[1].trim();
+        } else if (lower.startsWith("role:") || lower.startsWith("title:") || lower.startsWith("job title:")) {
+          role = line.split(":")[1].trim();
+        } else if (lower.startsWith("location:") || lower.startsWith("job location:")) {
+          location = line.split(":")[1].trim();
+        } else if (lower.startsWith("salary:") || lower.startsWith("compensation:")) {
+          salary = line.split(":")[1].trim();
+        } else if (lower.startsWith("skills:") || lower.startsWith("requirements:")) {
+          const skVal = line.split(":")[1].trim();
+          skVal.split(/[,|]/).forEach(s => skills.push(s.trim()));
+        }
+      });
+
+      if (!company) {
+        const compMatch = text.match(/(?:at|join|with)\s+([A-Z][a-zA-Z0-9\s]+?)(?:\s+as|\s+in|\s+to|\.|\n|,)/);
+        if (compMatch) company = compMatch[1].trim();
+      }
+      if (!role) {
+        const roleMatch = text.match(/(?:seeking|hiring|for a|looking for)\s+([A-Z][a-zA-Z0-9\s-]{4,30}?)(?:\s+to|\s+at|\s+in|\n|,)/);
+        if (roleMatch) role = roleMatch[1].trim();
+      }
+      if (!location) {
+        if (text.toLowerCase().includes("remote")) location = "Remote";
+        else if (text.toLowerCase().includes("hybrid")) location = "Hybrid";
+        else {
+          const locMatch = text.match(/(?:located in|based in|in)\s+([A-Z][a-zA-Z\s,]{3,20}?)(?:\.|\n|,)/);
+          if (locMatch) location = locMatch[1].trim();
+        }
+      }
+      if (!salary) {
+        const salMatch = text.match(/(\$\d+[\d,]*\s*(?:-\s*\$\d+[\d,]*\s*)?(?:\/year|\/hr|k|K)?)/);
+        if (salMatch) salary = salMatch[1].trim();
+      }
+
+      const popularSkills = [
+        "react", "node", "python", "fastapi", "docker", "kubernetes", "typescript", 
+        "javascript", "aws", "gcloud", "sql", "sqlite", "postgresql", "mongodb", 
+        "golang", "rust", "java", "css", "html", "vue", "angular", "next.js"
+      ];
+      popularSkills.forEach(s => {
+        const regex = new RegExp(`\\b${s}\\b`, 'i');
+        if (text.match(regex)) {
+          skills.push(s.charAt(0).toUpperCase() + s.slice(1));
+        }
+      });
+    }
+
+    setForm({
+      company: company || form.company,
+      role: role || form.role,
+      location: location || form.location || "Remote",
+      salary: salary || form.salary,
+      skills: skills.length > 0 ? Array.from(new Set(skills)).join(", ") : form.skills,
+      apply_link: quickPaste.startsWith("http") ? quickPaste : form.apply_link,
+      description: description.slice(0, 180) + (description.length > 180 ? "..." : "")
+    });
+
+    setQuickPaste("");
+    setStatusMsg("✨ Form auto-filled successfully!");
+    setTimeout(() => setStatusMsg(""), 3000);
   };
 
   const handlePostOpportunity = async () => {
@@ -251,63 +392,7 @@ export default function AdminPage() {
     }
   };
 
-  // Helper function to calculate SHA-256 in browser utilizing Web Crypto API
-  const sha256 = async (message: string): Promise<string> => {
-    const msgBuffer = new TextEncoder().encode(message);
-    const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
-  };
 
-  // Cryptographic claims generation & digital signing using local salted trust anchor
-  const handleGenerateClaim = async () => {
-    if (!claimName || !claimEmail || !claimTitle || !claimSkills || !claimTenure) {
-      setErrorMsg("All core claims fields are required to sign the credential.");
-      setTimeout(() => setErrorMsg(""), 3500);
-      return;
-    }
-
-    try {
-      const issuedAt = new Date().toISOString().split("T")[0];
-      const claimBody: Record<string, any> = {
-        candidate_name: claimName,
-        candidate_email: claimEmail,
-        issuer_name: claimIssuer,
-        issuer_domain: claimDomain,
-        claim_title: claimTitle,
-        skills: claimSkills.split(",").map((s) => s.trim()).filter(Boolean),
-        tenure: claimTenure,
-        issued_at: issuedAt,
-      };
-
-      // Replicate the exact sorted serialization performed by SQLAlchemy / FastAPI in Python
-      const sortedBody: Record<string, any> = {};
-      Object.keys(claimBody).sort().forEach((key) => {
-        sortedBody[key] = claimBody[key];
-      });
-
-      const serialized = JSON.stringify(sortedBody);
-      const signature = await sha256(serialized + "jobsvilla_trust_anchor");
-
-      const signedClaim = {
-        ...claimBody,
-        signature: signature,
-      };
-
-      setGeneratedJson(JSON.stringify(signedClaim, null, 2));
-      setStatusMsg("Zero-Trust Cryptographic Career Claim generated successfully!");
-      setTimeout(() => setStatusMsg(""), 3500);
-    } catch (e) {
-      setErrorMsg("Failed to sign credential.");
-      setTimeout(() => setErrorMsg(""), 3500);
-    }
-  };
-
-  const handleCopyClaim = () => {
-    navigator.clipboard.writeText(generatedJson);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
 
   const filteredCandidates = candidates.filter(
     (c) =>
@@ -334,7 +419,7 @@ export default function AdminPage() {
             className={`rounded-lg px-4 py-2 text-xs font-bold transition-all ${
               activeTab === "jobs"
                 ? "bg-gradient-to-r from-cyan-500 to-blue-500 text-zinc-950 shadow-md"
-                : "text-zinc-400 hover:text-white"
+                : "text-zinc-400-force hover:text-white"
             }`}
           >
             Job Postings
@@ -344,30 +429,30 @@ export default function AdminPage() {
             className={`rounded-lg px-4 py-2 text-xs font-bold transition-all ${
               activeTab === "broadcast"
                 ? "bg-gradient-to-r from-cyan-500 to-blue-500 text-zinc-950 shadow-md"
-                : "text-zinc-400 hover:text-white"
+                : "text-zinc-400-force hover:text-white"
             }`}
           >
             Broadcast Center
-          </button>
-          <button
-            onClick={() => setActiveTab("claims")}
-            className={`rounded-lg px-4 py-2 text-xs font-bold transition-all ${
-              activeTab === "claims"
-                ? "bg-gradient-to-r from-cyan-500 to-blue-500 text-zinc-950 shadow-md"
-                : "text-zinc-400 hover:text-white"
-            }`}
-          >
-            Claim Signer
           </button>
           <button
             onClick={() => setActiveTab("vetting")}
             className={`rounded-lg px-4 py-2 text-xs font-bold transition-all ${
               activeTab === "vetting"
                 ? "bg-gradient-to-r from-cyan-500 to-blue-500 text-zinc-950 shadow-md"
-                : "text-zinc-400 hover:text-white"
+                : "text-zinc-400-force hover:text-white"
             }`}
           >
             Vetting Queue
+          </button>
+          <button
+            onClick={() => setActiveTab("users")}
+            className={`rounded-lg px-4 py-2 text-xs font-bold transition-all ${
+              activeTab === "users"
+                ? "bg-gradient-to-r from-cyan-500 to-blue-500 text-zinc-950 shadow-md"
+                : "text-zinc-400-force hover:text-white"
+            }`}
+          >
+            Users Directory
           </button>
         </div>
       </div>
@@ -411,9 +496,9 @@ export default function AdminPage() {
             </div>
           </div>
 
-          <div className="grid gap-8 lg:grid-cols-12">
+          <div className="flex flex-col gap-8 w-full">
             {/* Job posting form */}
-            <div className="lg:col-span-5">
+            <div className="w-full">
               <motion.div
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -425,6 +510,28 @@ export default function AdminPage() {
                   Upload Job Link
                 </h2>
 
+                {/* Smart Quick Import & Heuristics */}
+                <div className="mb-6 p-4 rounded-2xl border border-dashed border-cyan-500/30 bg-cyan-500/[0.02] space-y-3">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-cyan-400 block">⚡ Smart Quick Import & Auto-Fill</span>
+                  <div className="flex gap-2">
+                    <input
+                      value={quickPaste}
+                      onChange={(e) => setQuickPaste(e.target.value)}
+                      placeholder="Paste Job URL or Raw job text details here..."
+                      className="flex-grow rounded-xl border border-white/10 bg-zinc-950/80 px-4 py-2.5 text-xs text-white outline-none focus:border-cyan-500 transition placeholder:text-zinc-650"
+                    />
+                    <button
+                      onClick={handleQuickImport}
+                      className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-xs font-bold text-zinc-950 shadow-md hover:brightness-110 transition shrink-0 cursor-pointer"
+                    >
+                      Auto-Fill
+                    </button>
+                  </div>
+                  <p className="text-[9px] text-zinc-500 leading-normal">
+                    Tip: Paste a LinkedIn job link, or corporate description paragraph, then click Auto-Fill to populate the form instantly!
+                  </p>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3.5">
                   <div>
                     <label className="text-[10px] uppercase tracking-wider font-bold text-zinc-400 block mb-1">
@@ -434,7 +541,7 @@ export default function AdminPage() {
                       value={form.company}
                       onChange={(e) => setForm({ ...form, company: e.target.value })}
                       placeholder="e.g. Amazon, Google"
-                      className="w-full rounded-xl border border-white/10 bg-zinc-950/60 px-4 py-3 text-xs text-white outline-none hover:border-zinc-700 focus:border-cyan-500 transition placeholder:text-zinc-600"
+                      className="w-full rounded-xl border border-white/10 bg-zinc-950/60 px-4 py-3 text-xs text-white outline-none hover:border-zinc-700 focus:border-cyan-500 transition placeholder:text-zinc-650"
                     />
                   </div>
 
@@ -446,7 +553,7 @@ export default function AdminPage() {
                       value={form.role}
                       onChange={(e) => setForm({ ...form, role: e.target.value })}
                       placeholder="e.g. Full Stack Developer"
-                      className="w-full rounded-xl border border-white/10 bg-zinc-950/60 px-4 py-3 text-xs text-white outline-none hover:border-zinc-700 focus:border-cyan-500 transition placeholder:text-zinc-600"
+                      className="w-full rounded-xl border border-white/10 bg-zinc-950/60 px-4 py-3 text-xs text-white outline-none hover:border-zinc-700 focus:border-cyan-500 transition placeholder:text-zinc-650"
                     />
                   </div>
 
@@ -458,7 +565,7 @@ export default function AdminPage() {
                       value={form.location}
                       onChange={(e) => setForm({ ...form, location: e.target.value })}
                       placeholder="e.g. Remote / Bangalore"
-                      className="w-full rounded-xl border border-white/10 bg-zinc-950/60 px-4 py-3 text-xs text-white outline-none hover:border-zinc-700 focus:border-cyan-500 transition placeholder:text-zinc-600"
+                      className="w-full rounded-xl border border-white/10 bg-zinc-950/60 px-4 py-3 text-xs text-white outline-none hover:border-zinc-700 focus:border-cyan-500 transition placeholder:text-zinc-650"
                     />
                   </div>
 
@@ -470,7 +577,7 @@ export default function AdminPage() {
                       value={form.salary}
                       onChange={(e) => setForm({ ...form, salary: e.target.value })}
                       placeholder="e.g. $90k - $120k / Year"
-                      className="w-full rounded-xl border border-white/10 bg-zinc-950/60 px-4 py-3 text-xs text-white outline-none hover:border-zinc-700 focus:border-cyan-500 transition placeholder:text-zinc-600"
+                      className="w-full rounded-xl border border-white/10 bg-zinc-950/60 px-4 py-3 text-xs text-white outline-none hover:border-zinc-700 focus:border-cyan-500 transition placeholder:text-zinc-650"
                     />
                   </div>
 
@@ -482,7 +589,7 @@ export default function AdminPage() {
                       value={form.skills}
                       onChange={(e) => setForm({ ...form, skills: e.target.value })}
                       placeholder="e.g. React, Node.js, Sqlite"
-                      className="w-full rounded-xl border border-white/10 bg-zinc-950/60 px-4 py-3 text-xs text-white outline-none hover:border-zinc-700 focus:border-cyan-500 transition placeholder:text-zinc-600"
+                      className="w-full rounded-xl border border-white/10 bg-zinc-950/60 px-4 py-3 text-xs text-white outline-none hover:border-zinc-700 focus:border-cyan-500 transition placeholder:text-zinc-650"
                     />
                   </div>
 
@@ -494,7 +601,7 @@ export default function AdminPage() {
                       value={form.apply_link}
                       onChange={(e) => setForm({ ...form, apply_link: e.target.value })}
                       placeholder="e.g. https://linkedin.com/jobs/view/..."
-                      className="w-full rounded-xl border border-white/10 bg-zinc-950/60 px-4 py-3 text-xs text-white outline-none hover:border-zinc-700 focus:border-cyan-500 transition placeholder:text-zinc-600"
+                      className="w-full rounded-xl border border-white/10 bg-zinc-950/60 px-4 py-3 text-xs text-white outline-none hover:border-zinc-700 focus:border-cyan-500 transition placeholder:text-zinc-650"
                     />
                   </div>
 
@@ -507,7 +614,7 @@ export default function AdminPage() {
                       onChange={(e) => setForm({ ...form, description: e.target.value })}
                       placeholder="Briefly describe the requirements, key objectives, or refer details..."
                       rows={3}
-                      className="w-full rounded-xl border border-white/10 bg-zinc-950/60 p-4 text-xs text-white outline-none hover:border-zinc-700 focus:border-cyan-500 transition resize-none placeholder:text-zinc-600"
+                      className="w-full rounded-xl border border-white/10 bg-zinc-950/60 p-4 text-xs text-white outline-none hover:border-zinc-700 focus:border-cyan-500 transition resize-none placeholder:text-zinc-650"
                     />
                   </div>
                 </div>
@@ -535,7 +642,7 @@ export default function AdminPage() {
             </div>
 
             {/* Live opportunity catalog list */}
-            <div className="lg:col-span-7">
+            <div className="w-full">
               <div className="glass-3d bg-white/[0.01] p-6 rounded-3xl border border-white/5 relative">
                 <div className="flex items-center justify-between gap-4 mb-5">
                   <h2 className="text-sm font-extrabold uppercase tracking-widest text-white">
@@ -823,167 +930,7 @@ export default function AdminPage() {
         </div>
       )}
 
-      {activeTab === "claims" && (
-        <div className="grid gap-8 lg:grid-cols-2">
-          {/* Claim Parameters Form */}
-          <TiltCard maxTilt={1} scale={1} className="glass-3d bg-white/[0.03] p-6 rounded-3xl border border-white/10 card-glow-cyan flex flex-col justify-between">
-            <div>
-              <h2 className="text-sm font-extrabold uppercase tracking-widest text-white mb-5 flex items-center gap-2">
-                <Key size={18} className="text-cyan-400" />
-                Sovereign Claims Generator
-              </h2>
 
-              <div className="space-y-4">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <label className="text-[10px] uppercase tracking-wider font-bold text-zinc-400 block mb-1">
-                      Candidate Full Name *
-                    </label>
-                    <input
-                      value={claimName}
-                      onChange={(e) => setClaimName(e.target.value)}
-                      placeholder="e.g. Praful"
-                      className="w-full rounded-xl border border-white/10 bg-zinc-950/60 px-4 py-3 text-xs text-white outline-none hover:border-zinc-700 focus:border-cyan-500 transition placeholder:text-zinc-600"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] uppercase tracking-wider font-bold text-zinc-400 block mb-1">
-                      Candidate Email *
-                    </label>
-                    <input
-                      value={claimEmail}
-                      onChange={(e) => setClaimEmail(e.target.value)}
-                      placeholder="e.g. praful@gmail.com"
-                      className="w-full rounded-xl border border-white/10 bg-zinc-950/60 px-4 py-3 text-xs text-white outline-none hover:border-zinc-700 focus:border-cyan-500 transition placeholder:text-zinc-600"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-[10px] uppercase tracking-wider font-bold text-zinc-400 block mb-1">
-                    Verified Claim / Role Title *
-                  </label>
-                  <input
-                    value={claimTitle}
-                    onChange={(e) => setClaimTitle(e.target.value)}
-                    placeholder="e.g. Senior Backend Architect"
-                    className="w-full rounded-xl border border-white/10 bg-zinc-950/60 px-4 py-3 text-xs text-white outline-none hover:border-zinc-700 focus:border-cyan-500 transition placeholder:text-zinc-600"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-[10px] uppercase tracking-wider font-bold text-zinc-400 block mb-1">
-                    Key Skills Certified (Comma separated) *
-                  </label>
-                  <input
-                    value={claimSkills}
-                    onChange={(e) => setClaimSkills(e.target.value)}
-                    placeholder="e.g. FastAPI, PostgreSQL, Kubernetes"
-                    className="w-full rounded-xl border border-white/10 bg-zinc-950/60 px-4 py-3 text-xs text-white outline-none hover:border-zinc-700 focus:border-cyan-500 transition placeholder:text-zinc-600"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-[10px] uppercase tracking-wider font-bold text-zinc-400 block mb-1">
-                    Employment Tenure / Period *
-                  </label>
-                  <input
-                    value={claimTenure}
-                    onChange={(e) => setClaimTenure(e.target.value)}
-                    placeholder="e.g. June 2024 - Dec 2024 (6 Months)"
-                    className="w-full rounded-xl border border-white/10 bg-zinc-950/60 px-4 py-3 text-xs text-white outline-none hover:border-zinc-700 focus:border-cyan-500 transition placeholder:text-zinc-600"
-                  />
-                </div>
-
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <label className="text-[10px] uppercase tracking-wider font-bold text-zinc-400 block mb-1">
-                      Issuer Corporation Name
-                    </label>
-                    <input
-                      value={claimIssuer}
-                      onChange={(e) => setClaimIssuer(e.target.value)}
-                      placeholder="e.g. Google Cloud"
-                      className="w-full rounded-xl border border-white/10 bg-zinc-950/60 px-4 py-3 text-xs text-white outline-none hover:border-zinc-700 focus:border-cyan-500 transition placeholder:text-zinc-600"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] uppercase tracking-wider font-bold text-zinc-400 block mb-1">
-                      Verified Corporate Domain
-                    </label>
-                    <input
-                      value={claimDomain}
-                      onChange={(e) => setClaimDomain(e.target.value)}
-                      placeholder="e.g. google.com"
-                      className="w-full rounded-xl border border-white/10 bg-zinc-950/60 px-4 py-3 text-xs text-white outline-none hover:border-zinc-700 focus:border-cyan-500 transition placeholder:text-zinc-600"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-8">
-              <button
-                onClick={handleGenerateClaim}
-                className="w-full rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 py-3.5 text-xs font-bold text-zinc-950 hover:brightness-110 shadow-lg shadow-cyan-500/10 flex items-center justify-center gap-2 transition"
-              >
-                <ShieldCheck size={16} />
-                Digitally Sign Claim JSON
-              </button>
-            </div>
-          </TiltCard>
-
-          {/* Generated Claim Output Block */}
-          <div className="glass-3d bg-white/[0.01] p-6 rounded-3xl border border-white/5 flex flex-col justify-between min-h-[500px]">
-            <div className="flex-1 flex flex-col">
-              <div className="flex items-center justify-between gap-4 mb-4">
-                <h3 className="text-xs uppercase tracking-wider font-bold text-zinc-400">
-                  Signed Career Credential JSON Block
-                </h3>
-                {generatedJson && (
-                  <button
-                    onClick={handleCopyClaim}
-                    className="flex items-center gap-1 text-[10px] font-bold text-cyan-400 uppercase tracking-wider"
-                  >
-                    {copied ? (
-                      <>
-                        <Check size={11} className="text-emerald-400" />
-                        Copied
-                      </>
-                    ) : (
-                      <>
-                        <Copy size={11} />
-                        Copy Code
-                      </>
-                    )}
-                  </button>
-                )}
-              </div>
-
-              {generatedJson ? (
-                <div className="flex-1 rounded-2xl bg-zinc-950 p-5 border border-white/5 font-mono text-[10px] text-cyan-400 overflow-auto max-h-[380px] custom-scrollbar shadow-inner relative">
-                  <pre className="whitespace-pre-wrap leading-relaxed">{generatedJson}</pre>
-                </div>
-              ) : (
-                <div className="flex-1 flex flex-col items-center justify-center border border-dashed border-white/10 rounded-2xl bg-zinc-950/20">
-                  <Key size={36} className="text-zinc-800 mb-3 animate-pulse" />
-                  <span className="text-zinc-500 text-xs uppercase tracking-widest font-bold text-center max-w-[260px] leading-relaxed">
-                    Fill the form and click sign to compile a cryptographically verified career claim
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {generatedJson && (
-              <div className="mt-6 p-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/5">
-                <p className="text-emerald-400 text-xs font-bold leading-relaxed">
-                  ✓ Claim signed using JobsVilla Private Anchors key. Candidates can copy this block and paste it under Tab 3: "Verified Credentials Vault" in their Resume Studio to secure an instant Verified Talent Badge!
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
       {activeTab === "vetting" && (
         <div className="space-y-6">
@@ -1072,6 +1019,116 @@ export default function AdminPage() {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      {activeTab === "users" && (
+        <div className="space-y-6">
+          <div className="glass-3d bg-white/[0.02] p-6 rounded-3xl border border-white/10 relative card-glow-cyan">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-5 border-b border-white/5 pb-3">
+              <div>
+                <h2 className="text-sm font-extrabold uppercase tracking-widest text-white flex items-center gap-2">
+                  <Users size={18} className="text-cyan-400" />
+                  Users Administration Directory ({allUsers.length})
+                </h2>
+                <p className="text-[11px] text-zinc-400 mt-1">Manage and moderate active user accounts, roles, and suspension blocks.</p>
+              </div>
+              <button
+                onClick={loadAllUsers}
+                disabled={loadingUsers}
+                className="flex items-center gap-1.5 text-[10px] font-bold text-cyan-400 uppercase tracking-wider disabled:opacity-50"
+              >
+                <RefreshCw size={10} className={loadingUsers ? "animate-spin" : ""} />
+                Refresh Directory
+              </button>
+            </div>
+
+            {/* User Search Input */}
+            <div className="relative mb-5">
+              <Search size={14} className="absolute left-3.5 top-3.5 text-zinc-500" />
+              <input
+                value={userSearchQuery}
+                onChange={(e) => setUserSearchQuery(e.target.value)}
+                placeholder="Search user name, email, or role..."
+                className="w-full rounded-xl border border-white/5 bg-zinc-950/80 pl-10 pr-4 py-3 text-xs text-white outline-none focus:border-cyan-500 transition placeholder:text-zinc-650"
+              />
+            </div>
+
+            {userActionStatus && (
+              <div className="mb-4 p-3 rounded-xl border border-cyan-500/20 bg-cyan-500/5 text-xs font-semibold text-cyan-400 animate-in fade-in duration-200">
+                {userActionStatus}
+              </div>
+            )}
+
+            {loadingUsers ? (
+              <div className="py-20 flex flex-col items-center justify-center text-zinc-400 gap-2">
+                <RefreshCw size={24} className="animate-spin text-cyan-400" />
+                <span className="text-[10px] uppercase font-bold tracking-widest">Scanning Users database...</span>
+              </div>
+            ) : allUsers.length === 0 ? (
+              <div className="h-64 flex flex-col items-center justify-center border border-dashed border-white/10 rounded-2xl bg-zinc-950/20">
+                <Users size={36} className="text-zinc-700 mb-3 animate-pulse" />
+                <span className="text-zinc-500 text-xs uppercase tracking-widest font-bold">No Users Found</span>
+              </div>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {allUsers
+                  .filter(
+                    (u) =>
+                      u.name.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
+                      u.email.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
+                      u.role.toLowerCase().includes(userSearchQuery.toLowerCase())
+                  )
+                  .map((u) => {
+                    const isBlocked = u.role === "blocked";
+                    return (
+                      <div
+                        key={u.id}
+                        className={`glass-3d p-5 rounded-2xl border transition-all flex flex-col justify-between gap-4 relative overflow-hidden ${
+                          isBlocked
+                            ? "bg-red-500/[0.02] border-red-500/20"
+                            : "bg-zinc-900/60 border-white/5 hover:border-white/10"
+                        }`}
+                      >
+                        <div className={`absolute top-0 left-0 bottom-0 w-1 ${isBlocked ? "bg-red-500" : "bg-cyan-500"}`} />
+                        
+                        <div className="space-y-2.5">
+                          <div className="flex justify-between items-start gap-2">
+                            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[8px] font-black uppercase tracking-wider shrink-0 border ${
+                              isBlocked
+                                ? "bg-red-500/10 border-red-500/30 text-red-400"
+                                : u.role === "admin"
+                                ? "bg-cyan-500/10 border-cyan-500/30 text-cyan-400"
+                                : "bg-zinc-500/10 border-white/10 text-zinc-300"
+                            }`}>
+                              Role: {u.role}
+                            </span>
+                            <span className="text-[9px] text-zinc-500 font-bold">ID: {u.id}</span>
+                          </div>
+
+                          <div className="space-y-0.5">
+                            <h4 className="text-sm font-bold text-white leading-none">{u.name}</h4>
+                            <p className="text-xs text-zinc-400 truncate" title={u.email}>{u.email}</p>
+                          </div>
+                        </div>
+
+                        <div className="flex gap-2 justify-end pt-2 border-t border-white/5">
+                          <button
+                            onClick={() => handleToggleBlock(u.id, isBlocked)}
+                            className={`rounded-xl px-4 py-2 text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                              isBlocked
+                                ? "bg-emerald-500 hover:bg-emerald-400 text-zinc-950 shadow-md shadow-emerald-500/10"
+                                : "bg-red-500 hover:bg-red-400 text-white shadow-md shadow-red-500/10"
+                            }`}
+                          >
+                            {isBlocked ? "Unblock Account" : "Block Account"}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
               </div>
             )}
           </div>

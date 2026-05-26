@@ -40,6 +40,12 @@ def get_current_user(
             detail="User not found",
         )
 
+    if user.role == "blocked":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Your account has been blocked by the administrator.",
+        )
+
     return user
 
 
@@ -114,6 +120,12 @@ def login(
 
     if not db_user:
         raise HTTPException(status_code=401, detail="Invalid email or password")
+
+    if db_user.role == "blocked":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Your account has been blocked by the administrator."
+        )
 
     if not verify_password(
         form_data.password,
