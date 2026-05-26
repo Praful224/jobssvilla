@@ -631,10 +631,10 @@ export function ResumeBuilder({ initialResume }: ResumeBuilderProps) {
               <div className="space-y-4">
                 
                 {/* SECTION 1: HEADER */}
-                <div className="border border-white/10 rounded-xl overflow-hidden bg-white/[0.01]">
+                <div className="resume-accordion-wrapper border border-white/10 rounded-xl overflow-hidden bg-white/[0.01]">
                   <button
                     onClick={() => toggleSection("header")}
-                    className="w-full flex items-center justify-between p-4 bg-white/5 text-sm font-bold text-white hover:bg-white/10 transition"
+                    className="resume-accordion-header w-full flex items-center justify-between p-4 bg-white/5 text-sm font-bold text-white hover:bg-white/10 transition"
                   >
                     <span className="flex items-center gap-2">
                       <span className="h-2 w-2 rounded-full bg-emerald-400" />
@@ -712,10 +712,10 @@ export function ResumeBuilder({ initialResume }: ResumeBuilderProps) {
                 </div>
 
                 {/* SECTION 2: PROFESSIONAL SUMMARY */}
-                <div className="border border-white/10 rounded-xl overflow-hidden bg-white/[0.01]">
+                <div className="resume-accordion-wrapper border border-white/10 rounded-xl overflow-hidden bg-white/[0.01]">
                   <button
                     onClick={() => toggleSection("summary")}
-                    className="w-full flex items-center justify-between p-4 bg-white/5 text-sm font-bold text-white hover:bg-white/10 transition"
+                    className="resume-accordion-header w-full flex items-center justify-between p-4 bg-white/5 text-sm font-bold text-white hover:bg-white/10 transition"
                   >
                     <span className="flex items-center gap-2">
                       <span className="h-2 w-2 rounded-full bg-emerald-400" />
@@ -738,10 +738,10 @@ export function ResumeBuilder({ initialResume }: ResumeBuilderProps) {
                 </div>
 
                 {/* SECTION 3: TECHNICAL SKILLS */}
-                <div className="border border-white/10 rounded-xl overflow-hidden bg-white/[0.01]">
+                <div className="resume-accordion-wrapper border border-white/10 rounded-xl overflow-hidden bg-white/[0.01]">
                   <button
                     onClick={() => toggleSection("skills")}
-                    className="w-full flex items-center justify-between p-4 bg-white/5 text-sm font-bold text-white hover:bg-white/10 transition"
+                    className="resume-accordion-header w-full flex items-center justify-between p-4 bg-white/5 text-sm font-bold text-white hover:bg-white/10 transition"
                   >
                     <span className="flex items-center gap-2">
                       <span className="h-2 w-2 rounded-full bg-emerald-400" />
@@ -752,7 +752,7 @@ export function ResumeBuilder({ initialResume }: ResumeBuilderProps) {
                   {openSections.skills && (
                     <div className="p-4 space-y-4">
                       {resumeData.skills.map((skill: any, idx: number) => (
-                        <div key={idx} className="flex gap-2 items-start p-3 border border-white/5 rounded-lg bg-zinc-950/40 relative">
+                        <div key={idx} className="resume-section-card flex gap-2 items-start p-3 border border-white/5 rounded-lg bg-zinc-950/40 relative">
                           <div className="flex-1 space-y-2">
                             <input
                               value={skill.category}
@@ -788,10 +788,10 @@ export function ResumeBuilder({ initialResume }: ResumeBuilderProps) {
                 </div>
 
                 {/* SECTION 4: PROFESSIONAL EXPERIENCE */}
-                <div className="border border-white/10 rounded-xl overflow-hidden bg-white/[0.01]">
+                <div className="resume-accordion-wrapper border border-white/10 rounded-xl overflow-hidden bg-white/[0.01]">
                   <button
                     onClick={() => toggleSection("experience")}
-                    className="w-full flex items-center justify-between p-4 bg-white/5 text-sm font-bold text-white hover:bg-white/10 transition"
+                    className="resume-accordion-header w-full flex items-center justify-between p-4 bg-white/5 text-sm font-bold text-white hover:bg-white/10 transition"
                   >
                     <span className="flex items-center gap-2">
                       <span className="h-2 w-2 rounded-full bg-emerald-400" />
@@ -802,7 +802,7 @@ export function ResumeBuilder({ initialResume }: ResumeBuilderProps) {
                   {openSections.experience && (
                     <div className="p-4 space-y-6">
                       {resumeData.experience.map((exp: any, idx: number) => (
-                        <div key={idx} className="p-4 border border-white/10 rounded-xl bg-zinc-950/20 space-y-3 relative">
+                        <div key={idx} className="resume-section-card p-4 border border-white/10 rounded-xl bg-zinc-950/20 space-y-3 relative">
                           <div className="flex justify-between items-center mb-1">
                             <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">Role #{idx + 1}</span>
                             <button
@@ -931,10 +931,10 @@ export function ResumeBuilder({ initialResume }: ResumeBuilderProps) {
                 </div>
 
                 {/* SECTION 5: PROJECTS */}
-                <div className="border border-white/10 rounded-xl overflow-hidden bg-white/[0.01]">
+                <div className="resume-accordion-wrapper border border-white/10 rounded-xl overflow-hidden bg-white/[0.01]">
                   <button
                     onClick={() => toggleSection("projects")}
-                    className="w-full flex items-center justify-between p-4 bg-white/5 text-sm font-bold text-white hover:bg-white/10 transition"
+                    className="resume-accordion-header w-full flex items-center justify-between p-4 bg-white/5 text-sm font-bold text-white hover:bg-white/10 transition"
                   >
                     <span className="flex items-center gap-2">
                       <span className="h-2 w-2 rounded-full bg-emerald-400" />
@@ -945,7 +945,7 @@ export function ResumeBuilder({ initialResume }: ResumeBuilderProps) {
                   {openSections.projects && (
                     <div className="p-4 space-y-6">
                       {resumeData.projects.map((prj: any, idx: number) => (
-                        <div key={idx} className="p-4 border border-white/10 rounded-xl bg-zinc-950/20 space-y-3 relative">
+                        <div key={idx} className="resume-section-card p-4 border border-white/10 rounded-xl bg-zinc-950/20 space-y-3 relative">
                           <div className="flex justify-between items-center mb-1">
                             <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">Project #{idx + 1}</span>
                             <button
@@ -1073,10 +1073,10 @@ export function ResumeBuilder({ initialResume }: ResumeBuilderProps) {
                 </div>
 
                 {/* SECTION 6: EDUCATION */}
-                <div className="border border-white/10 rounded-xl overflow-hidden bg-white/[0.01]">
+                <div className="resume-accordion-wrapper border border-white/10 rounded-xl overflow-hidden bg-white/[0.01]">
                   <button
                     onClick={() => toggleSection("education")}
-                    className="w-full flex items-center justify-between p-4 bg-white/5 text-sm font-bold text-white hover:bg-white/10 transition"
+                    className="resume-accordion-header w-full flex items-center justify-between p-4 bg-white/5 text-sm font-bold text-white hover:bg-white/10 transition"
                   >
                     <span className="flex items-center gap-2">
                       <span className="h-2 w-2 rounded-full bg-emerald-400" />
@@ -1087,7 +1087,7 @@ export function ResumeBuilder({ initialResume }: ResumeBuilderProps) {
                   {openSections.education && (
                     <div className="p-4 space-y-6">
                       {resumeData.education.map((edu: any, idx: number) => (
-                        <div key={idx} className="p-4 border border-white/10 rounded-xl bg-zinc-950/20 space-y-3 relative">
+                        <div key={idx} className="resume-section-card p-4 border border-white/10 rounded-xl bg-zinc-950/20 space-y-3 relative">
                           <div className="flex justify-between items-center mb-1">
                             <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">Credential #{idx + 1}</span>
                             <button
@@ -1151,10 +1151,10 @@ export function ResumeBuilder({ initialResume }: ResumeBuilderProps) {
                 </div>
 
                 {/* SECTION 7: CUSTOM COLUMNS / SECTIONS */}
-                <div className="border border-white/10 rounded-xl overflow-hidden bg-white/[0.01]">
+                <div className="resume-accordion-wrapper border border-white/10 rounded-xl overflow-hidden bg-white/[0.01]">
                   <button
                     onClick={() => toggleSection("customSections")}
-                    className="w-full flex items-center justify-between p-4 bg-white/5 text-sm font-bold text-white hover:bg-white/10 transition"
+                    className="resume-accordion-header w-full flex items-center justify-between p-4 bg-white/5 text-sm font-bold text-white hover:bg-white/10 transition"
                   >
                     <span className="flex items-center gap-2">
                       <span className="h-2 w-2 rounded-full bg-emerald-400" />
@@ -1165,7 +1165,7 @@ export function ResumeBuilder({ initialResume }: ResumeBuilderProps) {
                   {openSections.customSections && (
                     <div className="p-4 space-y-6">
                       {(resumeData.custom_sections || []).map((section: any, idx: number) => (
-                        <div key={section.id || idx} className="p-4 border border-white/10 rounded-xl bg-zinc-950/20 space-y-3 relative">
+                        <div key={section.id || idx} className="resume-section-card p-4 border border-white/10 rounded-xl bg-zinc-950/20 space-y-3 relative">
                           <div className="flex justify-between items-center mb-1">
                             <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">Custom Section #{idx + 1}</span>
                             <button
@@ -1233,7 +1233,7 @@ export function ResumeBuilder({ initialResume }: ResumeBuilderProps) {
                 <button
                   onClick={exportDocx}
                   disabled={exportingDocx}
-                  className="rounded-xl border border-white/10 hover:border-emerald-400/40 bg-zinc-950 px-5 py-3 text-xs font-bold text-white flex items-center gap-2 hover:bg-emerald-400/[0.02] active:scale-95 transition"
+                  className="rounded-xl border border-white/10 hover:border-emerald-400/40 bg-zinc-950 px-5 py-3 text-xs font-bold text-white-force text-white flex items-center gap-2 hover:bg-emerald-400/[0.02] active:scale-95 transition"
                 >
                   {exportingDocx ? (
                     <RefreshCw size={14} className="animate-spin" />

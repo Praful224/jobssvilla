@@ -54,6 +54,9 @@ html[data-theme="light"] {
   .bg-white\/\[0\.01\],
   .bg-white\/\[0\.03\],
   .bg-white\/\[0\.05\],
+  .bg-white\/5,
+  .bg-zinc-950\/20,
+  .bg-zinc-950\/40,
   .bg-zinc-950\/60,
   .bg-zinc-950\/70 {
     background-color: rgba(255, 255, 255, 0.75) !important;
@@ -584,4 +587,41 @@ html[data-theme="dark"] .glass-3d:hover {
   z-index: 0;
   pointer-events: none;
   opacity: 0.9;
+}
+
+/* ═══════════════════════════════════════════════════
+   RESUME BUILDER CUSTOM SEMANTIC THEMING
+   ═══════════════════════════════════════════════════ */
+.resume-accordion-wrapper {
+  background-color: rgba(255, 255, 255, 0.45) !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+  transition: all 0.25s ease;
+}
+html[data-theme="dark"] .resume-accordion-wrapper {
+  background-color: rgba(255, 255, 255, 0.01) !important;
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+.resume-accordion-header {
+  background-color: rgba(0, 0, 0, 0.02) !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
+  color: #000000 !important;
+  font-weight: 800 !important;
+}
+html[data-theme="dark"] .resume-accordion-header {
+  background-color: rgba(255, 255, 255, 0.03) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+  color: #ffffff !important;
+}
+
+.resume-section-card {
+  background-color: #ffffff !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02) !important;
+  transition: all 0.25s ease;
+}
+html[data-theme="dark"] .resume-section-card {
+  background-color: rgba(255, 255, 255, 0.02) !important;
+  border-color: rgba(255, 255, 255, 0.06) !important;
+  box-shadow: none !important;
 }

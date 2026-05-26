@@ -220,33 +220,21 @@ export function AppShell({ children, title, subtitle }: AppShellProps) {
 
   return (
     <main className="min-h-screen bg-transparent text-zinc-800 dark:text-zinc-50 flex flex-col">
-      {/* Outside Fixed Premium Brand Logo (visible on desktop) */}
-      <div className="fixed top-6 left-8 z-50 hidden lg:flex items-center gap-2">
-        <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-[#2f54eb] to-cyan-500 text-white shadow-lg shadow-[#2f54eb]/20 group-hover:scale-105 transition duration-300">
-            <Compass size={16} className="animate-spin-slow" />
-          </div>
-          <span className="text-base font-black tracking-tight text-foreground">
-            Jobs<span className="text-[#2f54eb] dark:text-emerald-400 group-hover:text-emerald-300 transition-colors">Villa</span>
-          </span>
-        </Link>
-      </div>
-
-      {/* Floating Premium Glassy Pill Navbar (Baselayer & Cartage inspired crystal design - Right-aligned & Transparent) */}
-      <header className="fixed top-4 right-6 md:right-8 left-auto z-50 w-auto bg-transparent border-none shadow-none transition-all duration-300">
-        <div className="flex items-center gap-4">
-          {/* Brand Logo (mobile/tablet only) */}
-          <Link href="/" className="flex lg:hidden items-center gap-2 group shrink-0">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#2f54eb] to-cyan-500 text-zinc-950 shadow-md group-hover:scale-105 transition duration-300">
-              <Compass size={14} className="animate-spin-slow text-white" />
+      {/* Premium Glassy Navbar (Cartage-inspired unified structure) */}
+      <header className="fixed top-0 left-0 right-0 z-50 w-full bg-white/70 dark:bg-zinc-950/70 border-b border-black/5 dark:border-white/5 backdrop-blur-md transition-all duration-300 py-3 px-6 md:px-8">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+          {/* Brand Logo (Left corner) */}
+          <Link href="/" className="flex items-center gap-2.5 group shrink-0">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-[#2f54eb] to-cyan-500 text-white shadow-lg shadow-[#2f54eb]/20 group-hover:scale-105 transition duration-300">
+              <Compass size={16} className="animate-spin-slow text-white" />
             </div>
-            <span className="text-sm font-black tracking-tight text-foreground">
+            <span className="text-base font-black tracking-tight text-foreground">
               Jobs<span className="text-[#2f54eb] dark:text-emerald-400 group-hover:text-emerald-300 transition-colors">Villa</span>
             </span>
           </Link>
 
-          {/* Desktop Navigation Links (Group 1) */}
-          <nav className="relative hidden lg:flex items-center gap-1">
+          {/* Desktop Navigation Links (Centered main functionality) */}
+          <nav className="relative hidden lg:flex items-center justify-center gap-1.5 flex-grow flex-1">
             {mainNavItems.map((item) => {
               const Icon = item.icon;
               const active = pathname === item.href || pathname?.startsWith(item.href + "/");
