@@ -187,8 +187,13 @@ export default function Home() {
       {/* Premium Figma Header */}
       <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-6 sticky top-0 z-30 bg-[#060608]/40 backdrop-blur-md border-b border-white/5">
         <Link href="/" className="flex items-center gap-3 group">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-amber-500 text-zinc-950 shadow-lg shadow-orange-500/20 group-hover:scale-105 transition duration-300">
-            <Compass size={18} className="animate-spin-slow" />
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-amber-500 text-zinc-950 shadow-lg shadow-orange-500/20 group-hover:scale-105 transition duration-300 p-1.5">
+            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-full w-full stroke-zinc-950">
+              <path d="M20 45L50 20L80 45V75C80 77.76 77.76 80 75 80H25C22.24 80 20 77.76 20 75V45Z" strokeWidth="8" strokeLinejoin="round" />
+              <path d="M42 80V55H58V80" strokeWidth="8" strokeLinejoin="round" />
+              <path d="M36 20V12C36 9.79 37.79 8 40 8H60C62.21 8 64 9.79 64 12V20" strokeWidth="8" />
+              <circle cx="50" cy="38" r="6" fill="black" />
+            </svg>
           </div>
           <span className="text-xl font-black tracking-tight">
             Jobs<span className="text-orange-500 group-hover:text-orange-400 transition">Villa</span>

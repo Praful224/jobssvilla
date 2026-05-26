@@ -225,8 +225,13 @@ export function AppShell({ children, title, subtitle }: AppShellProps) {
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           {/* Brand Logo (Left corner) */}
           <Link href="/" className="flex items-center gap-2.5 group shrink-0">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-[#2f54eb] to-cyan-500 text-white shadow-lg shadow-[#2f54eb]/20 group-hover:scale-105 transition duration-300">
-              <Compass size={16} className="animate-spin-slow text-white" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-[#2f54eb] to-cyan-500 text-white shadow-lg shadow-[#2f54eb]/20 group-hover:scale-105 transition duration-300 p-1.5">
+              <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-full w-full stroke-white">
+                <path d="M20 45L50 20L80 45V75C80 77.76 77.76 80 75 80H25C22.24 80 20 77.76 20 75V45Z" strokeWidth="8" strokeLinejoin="round" />
+                <path d="M42 80V55H58V80" strokeWidth="8" strokeLinejoin="round" />
+                <path d="M36 20V12C36 9.79 37.79 8 40 8H60C62.21 8 64 9.79 64 12V20" strokeWidth="8" />
+                <circle cx="50" cy="38" r="6" fill="white" />
+              </svg>
             </div>
             <span className="text-base font-black tracking-tight text-foreground">
               Jobs<span className="text-[#2f54eb] dark:text-emerald-400 group-hover:text-emerald-300 transition-colors">Villa</span>
@@ -245,7 +250,7 @@ export function AppShell({ children, title, subtitle }: AppShellProps) {
                   href={item.href}
                   onMouseEnter={() => setHoveredNavItem(item)}
                   onMouseLeave={() => setHoveredNavItem(null)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 text-[10.5px] font-extrabold uppercase tracking-wider transition-all duration-300 ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold transition-all duration-300 ${
                     active
                       ? "text-foreground font-black scale-[1.01]"
                       : "text-foreground/70 hover:text-foreground"

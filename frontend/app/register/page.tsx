@@ -117,8 +117,13 @@ export default function RegisterPage() {
         <TiltCard maxTilt={3} scale={1} className="glass-3d bg-zinc-950/70 p-8 rounded-3xl border border-white/10 card-glow-cyan shadow-2xl">
           <div className="flex flex-col items-center text-center">
             <Link href="/" className="flex items-center gap-2 group mb-6">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500 text-zinc-950 shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition">
-                <Compass size={20} className="animate-spin-slow" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500 text-zinc-950 shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition p-1.5">
+                <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-full w-full stroke-zinc-950">
+                  <path d="M20 45L50 20L80 45V75C80 77.76 77.76 80 75 80H25C22.24 80 20 77.76 20 75V45Z" strokeWidth="8" strokeLinejoin="round" />
+                  <path d="M42 80V55H58V80" strokeWidth="8" strokeLinejoin="round" />
+                  <path d="M36 20V12C36 9.79 37.79 8 40 8H60C62.21 8 64 9.79 64 12V20" strokeWidth="8" />
+                  <circle cx="50" cy="38" r="6" fill="black" />
+                </svg>
               </div>
               <span className="text-2xl font-bold tracking-tight text-white">
                 Jobs<span className="text-emerald-400">Villa</span>

@@ -109,11 +109,13 @@ export default function LoginPage() {
               href="/"
               className="group mb-6 flex items-center gap-2"
             >
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500 text-zinc-950 shadow-lg shadow-emerald-500/20 transition group-hover:scale-105">
-                <Compass
-                  size={20}
-                  className="animate-spin-slow"
-                />
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500 text-zinc-950 shadow-lg shadow-emerald-500/20 transition group-hover:scale-105 p-1.5">
+                <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-full w-full stroke-zinc-950">
+                  <path d="M20 45L50 20L80 45V75C80 77.76 77.76 80 75 80H25C22.24 80 20 77.76 20 75V45Z" strokeWidth="8" strokeLinejoin="round" />
+                  <path d="M42 80V55H58V80" strokeWidth="8" strokeLinejoin="round" />
+                  <path d="M36 20V12C36 9.79 37.79 8 40 8H60C62.21 8 64 9.79 64 12V20" strokeWidth="8" />
+                  <circle cx="50" cy="38" r="6" fill="black" />
+                </svg>
               </div>
 
               <span className="text-2xl font-bold tracking-tight text-white">

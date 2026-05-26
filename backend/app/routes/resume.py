@@ -1,6 +1,8 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, File, UploadFile, Form
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
+from typing import Optional
+import re
 
 from app.config.database import get_db
 from app.models.user import User
@@ -23,6 +25,8 @@ from app.services.resume_service import (
     analyze_resume_vs_jd,
     verify_cryptographic_career_claim
 )
+from app.services.parser_service import extract_file_content
+from app.services.ats_engine import run_full_ats_analysis
 
 
 router = APIRouter(tags=["resume"])
@@ -85,4 +89,37 @@ def analyze_jd(payload: ResumeJDMatchRequest):
 @router.post("/resume/verify-claim")
 def verify_claim(payload: VerifyClaimRequest):
     return verify_cryptographic_career_claim(payload.claim_json)
+
+
+@router.post("/resume/upload-score")
+async def upload_score(
+    file: UploadFile = File(...),
+    target_role: Optional[str] = Form(None),
+    jd_content: Optional[str] = Form(None)
+):
+    # 1. Parse the uploaded file
+    file_bytes = await file.read()
+    parse_result = extract_file_content(file.filename, file_bytes)
+
+    text = parse_result["text"]
+    has_tables = parse_result["has_tables"]
+    is_scanned = parse_result["is_scanned"]
+
+    print("\n--- DEBUG ATS RESUME UPLOAD ---")
+    print(f"File: {file.filename} | Status: {parse_result['status']} | Chars: {len(text)}")
+    print(f"Sample:\n{text[:500]}")
+    print("--------------------------------\n")
+
+    # 2. Run the full research-backed ATS analysis engine
+    result = run_full_ats_analysis(
+        resume_text=text,
+        jd_text=jd_content or "",
+        target_role=target_role or "",
+        has_tables=has_tables,
+        is_scanned=is_scanned,
+        filename=file.filename,
+    )
+
+    return result
+
 

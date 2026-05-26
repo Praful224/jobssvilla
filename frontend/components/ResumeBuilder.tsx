@@ -80,7 +80,13 @@ const DEFAULT_RESUME_DATA = {
 };
 
 export function ResumeBuilder({ initialResume }: ResumeBuilderProps) {
-  const [activeTab, setActiveTab] = useState<"builder" | "jd-matcher" | "claims-vault">("builder");
+  const [activeTab, setActiveTab] = useState<"builder" | "ats-resume-score" | "claims-vault">("builder");
+
+  // Tab 2: All-in-One ATS Scorer States
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [atsResult, setAtsResult] = useState<any | null>(null);
+  const [atsRunning, setAtsRunning] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
 
   // Main structured resume data state
   const [fileName, setFileName] = useState(initialResume?.file_name || "My_Resume");
@@ -465,39 +471,78 @@ export function ResumeBuilder({ initialResume }: ResumeBuilderProps) {
     }
   };
 
-  // Analyze Alignment against JD using Synonym-aware matcher
-  const analyzeJdAlignment = async () => {
-    if (!jdText) {
-      setStatus("Please provide a target Job Description.");
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setSelectedFile(e.target.files[0]);
+      setStatus("Selected file: " + e.target.files[0].name);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const file = e.dataTransfer.files[0];
+      const ext = file.name.split('.').pop()?.toLowerCase();
+      if (['pdf', 'docx', 'doc', 'txt'].includes(ext || '')) {
+        setSelectedFile(file);
+        setStatus("Selected file: " + file.name);
+      } else {
+        setStatus("Unsupported format. Please upload PDF, DOCX, DOC, or TXT.");
+      }
+    }
+  };
+
+  const runAtsResumeAnalysis = async () => {
+    if (!selectedFile) {
+      setStatus("Please select a resume file (PDF, Word, or TXT) first.");
       return;
     }
-    setJdMatching(true);
-    setStatus("Computing offline semantic overlap...");
+    
+    setAtsRunning(true);
+    setAtsResult(null);
+    setStatus("Uploading and diagnosing resume file...");
+    
     try {
-      const resumeClearText = `
-        ${resumeData.name} ${resumeData.summary}
-        Skills: ${resumeData.skills.map((s: any) => `${s.category}: ${s.items}`).join(", ")}
-        Experience: ${resumeData.experience.map((e: any) => `${e.role} at ${e.company}. ${e.bullets.join(" ")}`).join(" ")}
-        Projects: ${resumeData.projects.map((p: any) => `${p.title}. ${p.bullets.join(" ")}`).join(" ")}
-        ${(resumeData.custom_sections || []).map((c: any) => `${c.title}: ${c.content}`).join(" ")}
-      `;
-
-      const data = await apiFetch<any>("/resume/analyze-jd", {
+      const token = getToken();
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+      if (jdRole) {
+        formData.append("target_role", jdRole);
+      }
+      if (jdText) {
+        formData.append("jd_content", jdText);
+      }
+      
+      const res = await fetch(`${API_BASE_URL}/resume/upload-score`, {
         method: "POST",
-        headers: jsonHeaders(),
-        body: JSON.stringify({
-          resume_content: resumeClearText,
-          jd_content: jdText,
-          target_role: jdRole || "Software Engineer"
-        }),
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: formData,
       });
-      setJdResult(data);
-      setStatus("JD matching matrix synced!");
-    } catch (e) {
+      
+      if (!res.ok) {
+        throw new Error("Analysis failed on the server.");
+      }
+      
+      const data = await res.json();
+      setAtsResult(data);
+      setStatus("ATS compatibility check completed successfully!");
+    } catch (e: any) {
       console.error(e);
-      setStatus("Matching calculation failed.");
+      setStatus("Analysis failed: " + (e.message || "Unknown error"));
     } finally {
-      setJdMatching(false);
+      setAtsRunning(false);
     }
   };
 
@@ -519,15 +564,15 @@ export function ResumeBuilder({ initialResume }: ResumeBuilderProps) {
           Interactive Resume Forge
         </button>
         <button
-          onClick={() => setActiveTab("jd-matcher")}
+          onClick={() => setActiveTab("ats-resume-score")}
           className={`flex items-center gap-2 px-5 py-3 text-sm font-bold border-b-2 transition ${
-            activeTab === "jd-matcher"
+            activeTab === "ats-resume-score"
               ? "border-emerald-400 text-emerald-400"
               : "border-transparent text-zinc-400 hover:text-white"
           }`}
         >
           <Cpu size={16} />
-          Synonym-Aware JD Matcher
+          ATS Resume Scorer
         </button>
 
       </div>
@@ -1238,145 +1283,376 @@ export function ResumeBuilder({ initialResume }: ResumeBuilderProps) {
         </div>
       )}
 
-      {activeTab === "jd-matcher" && (
+      {activeTab === "ats-resume-score" && (
         <div className="grid gap-6 xl:grid-cols-[1fr_420px]">
-          {/* JD Alignment Checker inputs */}
-          <section className="glass-3d bg-white/[0.02] p-6 rounded-2xl border border-white/10 space-y-4">
-            <h2 className="text-lg font-bold text-white flex items-center gap-2">
-              <Cpu size={20} className="text-emerald-400" />
-              Synonym-Aware ATS Matcher
-            </h2>
-            <p className="text-xs text-zinc-400 leading-relaxed">
-              Verify compatibility score indices between your credentials and corporate postings. Our local synonym matching mapper identifies relevant equivalents (e.g. maps <em>RDS</em> to <em>PostgreSQL</em>) automatically.
-            </p>
+          {/* Diagnostic Inputs Panel */}
+          <section className="glass-3d bg-white/[0.02] p-6 rounded-2xl border border-white/10 space-y-6">
+            <div>
+              <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                <Cpu size={20} className="text-emerald-400" />
+                All-in-One ATS Resume Scorer
+              </h2>
+              <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
+                Ingest your resume to score compatibility against the strict parsing pipelines of Workday, Greenhouse, iCIMS, Lever, and LinkedIn Easy Apply.
+              </p>
+            </div>
 
-            <div className="space-y-4 pt-2">
+            {/* Premium Upload Dropzone */}
+            <div className="space-y-2">
+              <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider block">
+                1. Upload Resume Document
+              </span>
+              
+              {!selectedFile ? (
+                <div
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  onClick={() => document.getElementById("ats-file-picker")?.click()}
+                  className={`h-40 rounded-2xl border border-dashed flex flex-col items-center justify-center p-6 text-center transition cursor-pointer select-none ${
+                    isDragOver
+                      ? "border-emerald-400 bg-emerald-400/5 shadow-lg shadow-emerald-500/5 scale-[0.99]"
+                      : "border-white/15 bg-zinc-950/20 hover:border-emerald-500/40 hover:bg-zinc-950/40"
+                  }`}
+                >
+                  <input
+                    id="ats-file-picker"
+                    type="file"
+                    accept=".pdf,.docx,.doc,.txt"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                  <FileText size={28} className={`mb-3 ${isDragOver ? "text-emerald-400 animate-bounce" : "text-zinc-500"}`} />
+                  <span className="text-xs text-zinc-300 font-bold">
+                    Drag & drop your resume file here
+                  </span>
+                  <span className="text-[10px] text-zinc-500 mt-1.5 leading-normal max-w-[240px]">
+                    Supports standard PDF, Word (.docx, .doc), or plain text formats up to 5MB.
+                  </span>
+                </div>
+              ) : (
+                <div className="glass-3d bg-emerald-500/[0.02] border border-emerald-500/20 rounded-2xl p-4 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="h-10 w-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                      <FileText size={18} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-white truncate leading-tight" title={selectedFile.name}>
+                        {selectedFile.name}
+                      </p>
+                      <p className="text-[9px] text-zinc-500 uppercase tracking-widest font-black mt-1">
+                        {(selectedFile.size / 1024).toFixed(1)} KB  •  {selectedFile.name.split('.').pop()?.toUpperCase()} Ready
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setSelectedFile(null);
+                      setAtsResult(null);
+                    }}
+                    className="p-2 rounded-xl bg-white/5 text-zinc-400 hover:text-red-400 hover:bg-red-500/10 transition shrink-0"
+                    title="Remove File"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Target Job Context (Inputs) */}
+            <div className="space-y-4 pt-2 border-t border-white/5">
+              <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider block">
+                2. Target Job Context (Optional)
+              </span>
+
               <div>
-                <label className="text-[10px] uppercase font-bold text-zinc-400 block mb-1">
+                <label className="text-[9px] uppercase font-bold text-zinc-500 block mb-1">
                   Target Competency Role
                 </label>
                 <input
                   value={jdRole}
                   onChange={(e) => setJdRole(e.target.value)}
                   placeholder="e.g. Senior Backend Engineer"
-                  className="w-full rounded-xl border border-white/10 bg-zinc-950/60 px-4 py-3 text-sm text-white outline-none focus:border-emerald-500 transition"
+                  className="w-full rounded-xl border border-white/10 bg-zinc-950/60 px-4 py-3 text-xs text-white outline-none focus:border-emerald-500 transition"
                 />
               </div>
 
-              <div className="grid gap-4 md:grid-cols-1">
-                <div>
-                  <label className="text-[10px] uppercase font-bold text-zinc-400 block mb-1">
-                    Job Description Content
-                  </label>
-                  <textarea
-                    value={jdText}
-                    onChange={(e) => setJdText(e.target.value)}
-                    rows={12}
-                    placeholder="Paste the corporate description text block..."
-                    className="w-full rounded-xl border border-white/10 bg-zinc-950/60 px-4 py-3 text-xs leading-relaxed text-zinc-300 outline-none focus:border-emerald-500 transition resize-y"
-                  />
-                </div>
+              <div>
+                <label className="text-[9px] uppercase font-bold text-zinc-500 block mb-1">
+                  Target Job Description Content
+                </label>
+                <textarea
+                  value={jdText}
+                  onChange={(e) => setJdText(e.target.value)}
+                  rows={6}
+                  placeholder="Paste the corporate description text block to enable matching keyword gap analytics..."
+                  className="w-full rounded-xl border border-white/10 bg-zinc-950/60 px-4 py-3 text-xs leading-relaxed text-zinc-300 outline-none focus:border-emerald-500 transition resize-y font-sans"
+                />
               </div>
             </div>
 
             <div className="pt-2 flex items-center justify-between gap-4">
               <button
-                onClick={analyzeJdAlignment}
-                disabled={jdMatching}
-                className="rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 px-6 py-3 text-sm font-bold text-zinc-950 flex items-center gap-2 hover:brightness-110 active:scale-95 transition"
+                onClick={runAtsResumeAnalysis}
+                disabled={atsRunning || !selectedFile}
+                className="rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 px-6 py-3.5 text-xs font-bold text-zinc-950 flex items-center gap-2 hover:brightness-110 active:scale-95 transition disabled:opacity-50"
               >
-                {jdMatching ? (
+                {atsRunning ? (
                   <RefreshCw size={14} className="animate-spin" />
                 ) : (
                   <Cpu size={14} />
                 )}
-                Analyze JD Fit Index
+                Analyze ATS Score
               </button>
 
               {status && (
-                <span className="text-xs font-semibold text-zinc-300 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 max-w-sm truncate">
+                <span className="text-[10px] font-bold text-zinc-400 bg-white/5 border border-white/10 rounded-lg px-3 py-2 max-w-sm truncate" title={status}>
                   {status}
                 </span>
               )}
             </div>
           </section>
 
-          {/* JD Alignment Results */}
+          {/* Diagnostic Results Sidebar */}
           <aside className="space-y-6">
             <div className="glass-3d p-6 rounded-2xl border border-white/10 flex flex-col justify-between h-full min-h-[480px]">
               <div>
                 <span className="text-xs font-bold uppercase tracking-wider text-zinc-400 block mb-4">
-                  Match Diagnostic Metrics
+                  ATS Diagnostic Report
                 </span>
 
-                {jdResult ? (
-                  <div className="space-y-4">
-                    {/* Glowing circular metric indicator */}
-                    <div className="flex flex-col items-center py-4 rounded-2xl bg-white/[0.02] border border-white/5">
-                      <div className="relative flex items-center justify-center">
-                        {/* Outer pulsing ring */}
+                {atsResult ? (
+                  <div className="space-y-5">
+                    {/* ── Main Score Gauge ── */}
+                    <div className="flex flex-col items-center py-4 rounded-2xl bg-white/[0.02] border border-white/5 relative overflow-hidden">
+                      <div className="absolute inset-0 bg-emerald-500/[0.02] blur-xl" />
+                      <div className="relative flex items-center justify-center mb-2">
                         <div className="absolute inset-0 rounded-full bg-emerald-400/10 blur-md animate-pulse" />
-                        <div className="h-24 w-24 rounded-full border-4 border-emerald-400/20 flex flex-col items-center justify-center bg-zinc-950/80 z-10">
-                          <span className="text-2xl font-black text-white">{jdResult.score}%</span>
-                          <span className="text-[8px] uppercase tracking-widest font-extrabold text-emerald-400 mt-0.5">FIT LEVEL</span>
+                        <div className={`h-24 w-24 rounded-full border-4 flex flex-col items-center justify-center bg-zinc-950/80 z-10 ${
+                          atsResult.ats_score >= 70 ? "border-emerald-400/40" : atsResult.ats_score >= 50 ? "border-cyan-400/40" : "border-red-400/40"
+                        }`}>
+                          <span className="text-2xl font-black text-white">{atsResult.ats_score}%</span>
+                          <span className="text-[8px] uppercase tracking-widest font-extrabold text-emerald-400 mt-0.5">ATS SCORE</span>
                         </div>
                       </div>
-                      
-                      <h4 className="mt-3 font-bold text-sm text-zinc-300 uppercase tracking-wide">
-                        {jdResult.score >= 80 ? "🔥 Exceptionally Strong Match" : jdResult.score >= 50 ? "⚡ Good Base Match" : "⚠️ Needs Improvement"}
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className={`text-lg font-black ${atsResult.grade?.startsWith("A") ? "text-emerald-400" : atsResult.grade?.startsWith("B") ? "text-cyan-400" : atsResult.grade?.startsWith("C") ? "text-yellow-400" : "text-red-400"}`}>
+                          Grade: {atsResult.grade || "—"}
+                        </span>
+                      </div>
+                      <h4 className="mt-1 font-bold text-xs text-zinc-300 uppercase tracking-wider leading-none">
+                        {atsResult.ats_score >= 80 ? "🔥 Exceptionally Strong Match" : atsResult.ats_score >= 60 ? "⚡ Good Match" : atsResult.ats_score >= 40 ? "⚠️ Needs Improvement" : "❌ High Rejection Risk"}
                       </h4>
                     </div>
 
-                    <div className="space-y-3">
-                      <div>
-                        <span className="text-[10px] font-bold uppercase text-zinc-400 block mb-1.5">
-                          Matched Concept Synonym Nodes ({jdResult.matched_skills.length})
+                    {/* ── Knockout Risk Alerts ── */}
+                    {atsResult.knockout_risks?.triggered && (
+                      <div className="space-y-2">
+                        <span className="text-[9px] font-black uppercase text-red-400 tracking-wider block flex items-center gap-1">
+                          🚨 Knockout Risk — Auto-Rejection Triggers ({atsResult.knockout_risks.triggers?.length})
                         </span>
-                        <div className="flex flex-wrap gap-1">
-                          {jdResult.matched_skills.map((s: string) => (
-                            <span key={s} className="rounded bg-emerald-400/10 border border-emerald-400/20 px-2 py-0.5 text-[9px] text-emerald-300 uppercase font-mono font-bold">
-                              {s}
-                            </span>
+                        <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                          {atsResult.knockout_risks.triggers?.map((t: any, i: number) => (
+                            <div key={i} className="p-2 rounded-lg bg-red-500/[0.05] border border-red-500/20 space-y-1">
+                              <div className="flex items-center gap-1.5">
+                                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${t.severity === "CRITICAL" ? "bg-red-500/20 text-red-300" : "bg-orange-500/20 text-orange-300"}`}>
+                                  {t.severity}
+                                </span>
+                                <span className="text-[9px] font-bold text-zinc-300">{t.rule}</span>
+                              </div>
+                              <p className="text-[9px] text-zinc-400 leading-relaxed">{t.detail}</p>
+                              <span className="text-[8px] text-zinc-500">Platforms: {t.platform_impact}</span>
+                            </div>
                           ))}
                         </div>
                       </div>
+                    )}
 
-                      <div>
-                        <span className="text-[10px] font-bold uppercase text-zinc-400 block mb-1.5">
-                          Missing Conceptual Gaps ({jdResult.missing_skills.length})
-                        </span>
-                        <div className="flex flex-wrap gap-1">
-                          {jdResult.missing_skills.map((s: string) => (
-                            <span key={s} className="rounded bg-red-400/10 border border-red-400/20 px-2 py-0.5 text-[9px] text-red-300 uppercase font-mono font-bold">
-                              {s}
-                            </span>
-                          ))}
+                    {/* ── Score Breakdown Bars ── */}
+                    <div className="space-y-2 pt-2 border-t border-white/5">
+                      <span className="text-[9px] font-black uppercase text-zinc-400 tracking-wider block">Score Breakdown</span>
+                      {[
+                        { label: "Keyword Match", val: atsResult.keyword_score },
+                        { label: "Formatting", val: atsResult.formatting_score },
+                        { label: "Structure", val: atsResult.structure_score },
+                        { label: "Content Quality", val: atsResult.quality_score },
+                      ].map(item => (
+                        <div key={item.label} className="flex items-center gap-2">
+                          <span className="text-[9px] text-zinc-400 w-28 shrink-0">{item.label}</span>
+                          <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all duration-700 ${item.val >= 70 ? "bg-emerald-500" : item.val >= 50 ? "bg-cyan-500" : "bg-red-500"}`}
+                              style={{ width: `${Math.min(item.val, 100)}%` }}
+                            />
+                          </div>
+                          <span className={`text-[10px] font-black w-8 text-right ${item.val >= 70 ? "text-emerald-400" : item.val >= 50 ? "text-cyan-400" : "text-red-400"}`}>
+                            {Math.round(item.val)}%
+                          </span>
                         </div>
-                      </div>
-                      
-                      <div className="pt-2 border-t border-white/5 space-y-1">
-                        <span className="text-[10px] font-bold uppercase text-zinc-400 block">
-                          AI Refactoring Recommendations
-                        </span>
-                        <p className="text-[11px] text-zinc-500 leading-relaxed">
-                          For optimum ATS parse rates, add the highlighted missing concepts (like <span className="text-zinc-400 font-bold">{jdResult.missing_skills.slice(0, 3).join(", ") || "none"}</span>) into your Skills section.
-                        </p>
+                      ))}
+                    </div>
+
+                    {/* ── 7-Platform Compatibility ── */}
+                    <div className="space-y-2 pt-2 border-t border-white/5">
+                      <span className="text-[9px] font-black uppercase text-zinc-400 tracking-wider block">
+                        7-Platform ATS Compatibility
+                      </span>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {Object.entries(atsResult.platform_compatibility || {}).map(([key, plat]: [string, any]) => {
+                          const name = key === "linkedin_easy_apply" ? "LinkedIn" : key === "smartrecruiters" ? "SmartRecruit" : key.charAt(0).toUpperCase() + key.slice(1);
+                          const score = typeof plat === "number" ? plat : plat?.score ?? 0;
+                          const grade = typeof plat === "object" && plat?.grade ? plat.grade : score >= 90 ? "A+" : score >= 80 ? "A" : score >= 70 ? "B+" : score >= 60 ? "B" : score >= 50 ? "C+" : "C";
+                          const risk = typeof plat === "object" ? plat?.risk : score < 40 ? "HIGH" : score < 60 ? "MEDIUM" : "LOW";
+                          return (
+                            <div key={key} className="p-2 rounded-lg border border-white/5 bg-zinc-950/60">
+                              <div className="flex items-center justify-between gap-1 mb-1">
+                                <span className="text-[8px] font-bold text-zinc-400 truncate">{name}</span>
+                                <span className={`text-[8px] font-black px-1 rounded ${risk === "HIGH" ? "bg-red-500/20 text-red-300" : risk === "MEDIUM" ? "bg-yellow-500/20 text-yellow-300" : "bg-emerald-500/20 text-emerald-300"}`}>{grade}</span>
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <div className="flex-1 h-1 bg-white/5 rounded-full overflow-hidden">
+                                  <div className={`h-full rounded-full ${score >= 70 ? "bg-emerald-500" : score >= 50 ? "bg-cyan-500" : "bg-red-500"}`} style={{ width: `${Math.min(score, 100)}%` }} />
+                                </div>
+                                <span className={`text-[10px] font-black ${score >= 70 ? "text-emerald-400" : score >= 50 ? "text-cyan-400" : "text-red-400"}`}>{score}%</span>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
+
+                    {/* ── Seniority & YoE ── */}
+                    {atsResult.seniority && (
+                      <div className="space-y-2 pt-2 border-t border-white/5">
+                        <span className="text-[9px] font-black uppercase text-zinc-400 tracking-wider block">Seniority & Experience</span>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="p-2 rounded-lg bg-white/[0.02] border border-white/5">
+                            <span className="text-[8px] text-zinc-500 block">Resume Level</span>
+                            <span className="text-[10px] font-bold text-cyan-400">{atsResult.seniority.resume_level}</span>
+                          </div>
+                          <div className="p-2 rounded-lg bg-white/[0.02] border border-white/5">
+                            <span className="text-[8px] text-zinc-500 block">JD Level</span>
+                            <span className="text-[10px] font-bold text-emerald-400">{atsResult.seniority.jd_level}</span>
+                          </div>
+                          <div className="p-2 rounded-lg bg-white/[0.02] border border-white/5">
+                            <span className="text-[8px] text-zinc-500 block">Total YoE</span>
+                            <span className="text-[10px] font-bold text-white">{atsResult.experience_analysis?.total_years ?? "—"} yrs</span>
+                          </div>
+                          <div className="p-2 rounded-lg bg-white/[0.02] border border-white/5">
+                            <span className="text-[8px] text-zinc-500 block">Jobs Detected</span>
+                            <span className="text-[10px] font-bold text-white">{atsResult.experience_analysis?.job_count ?? "—"}</span>
+                          </div>
+                        </div>
+                        {(atsResult.experience_analysis?.employment_gaps?.length ?? 0) > 0 && (
+                          <div className="text-[9px] text-yellow-400 bg-yellow-500/[0.05] border border-yellow-500/20 rounded-lg px-2 py-1.5 leading-relaxed">
+                            ⚠️ {atsResult.experience_analysis.employment_gaps.length} employment gap(s) detected — Workday ML flags these for recruiter review.
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* ── Content Quality ── */}
+                    {atsResult.content_quality && (
+                      <div className="space-y-2 pt-2 border-t border-white/5">
+                        <span className="text-[9px] font-black uppercase text-zinc-400 tracking-wider block">Content Quality</span>
+                        <div className="grid grid-cols-3 gap-1.5 text-center">
+                          <div className="p-1.5 rounded-lg bg-white/[0.02] border border-white/5">
+                            <span className="text-[8px] text-zinc-500 block">Quantified</span>
+                            <span className={`text-[11px] font-black ${(atsResult.content_quality.quantified_bullets_pct ?? 0) >= 40 ? "text-emerald-400" : "text-red-400"}`}>{atsResult.content_quality.quantified_bullets_pct ?? 0}%</span>
+                          </div>
+                          <div className="p-1.5 rounded-lg bg-white/[0.02] border border-white/5">
+                            <span className="text-[8px] text-zinc-500 block">Action Verbs</span>
+                            <span className="text-[11px] font-black text-cyan-400">{atsResult.content_quality.strong_action_verbs ?? 0}</span>
+                          </div>
+                          <div className="p-1.5 rounded-lg bg-white/[0.02] border border-white/5">
+                            <span className="text-[8px] text-zinc-500 block">Passive</span>
+                            <span className={`text-[11px] font-black ${(atsResult.content_quality.weak_passive_phrases ?? 0) > 2 ? "text-red-400" : "text-emerald-400"}`}>{atsResult.content_quality.weak_passive_phrases ?? 0}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ── Keyword Intelligence ── */}
+                    <div className="space-y-2 pt-2 border-t border-white/5">
+                      {(atsResult.matched_keywords?.length ?? 0) > 0 && (
+                        <div>
+                          <span className="text-[9px] font-black uppercase text-zinc-400 tracking-wider block mb-1">
+                            ✅ Matched Keywords ({atsResult.matched_keywords.length})
+                          </span>
+                          <div className="flex flex-wrap gap-1 max-h-16 overflow-y-auto pr-1">
+                            {atsResult.matched_keywords.map((s: string) => (
+                              <span key={s} className="rounded bg-emerald-400/10 border border-emerald-400/20 px-2 py-0.5 text-[8px] text-emerald-300 font-mono font-bold">{s}</span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {(atsResult.missing_keywords?.length ?? 0) > 0 && (
+                        <div>
+                          <span className="text-[9px] font-black uppercase text-zinc-400 tracking-wider block mb-1">
+                            ❌ Missing Keywords ({atsResult.missing_keywords.length})
+                          </span>
+                          <div className="flex flex-wrap gap-1 max-h-16 overflow-y-auto pr-1">
+                            {atsResult.missing_keywords.map((s: string) => (
+                              <span key={s} className="rounded bg-red-400/10 border border-red-400/20 px-2 py-0.5 text-[8px] text-red-300 font-mono font-bold">{s}</span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* ── Priority Action Plan ── */}
+                    {(atsResult.action_plan?.length ?? 0) > 0 && (
+                      <div className="pt-2.5 border-t border-white/5 space-y-1.5">
+                        <span className="text-[9px] font-black uppercase text-zinc-400 tracking-wider block">
+                          🎯 Priority Action Plan
+                        </span>
+                        <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
+                          {atsResult.action_plan.map((item: any, i: number) => (
+                            <div key={i} className={`p-2 rounded-lg border text-[9px] leading-relaxed ${
+                              item.impact === "CRITICAL" ? "bg-red-500/[0.04] border-red-500/20 text-red-300" :
+                              item.impact === "HIGH" ? "bg-orange-500/[0.04] border-orange-500/20 text-orange-300" :
+                              "bg-zinc-900/60 border-white/5 text-zinc-400"
+                            }`}>
+                              <span className={`text-[7px] font-black uppercase rounded px-1 mr-1.5 ${
+                                item.impact === "CRITICAL" ? "bg-red-500/20 text-red-300" :
+                                item.impact === "HIGH" ? "bg-orange-500/20 text-orange-300" :
+                                "bg-white/5 text-zinc-500"
+                              }`}>{item.impact}</span>
+                              {item.action}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Formatting issues */}
+                    {(atsResult.formatting_issues?.length ?? 0) > 0 && (
+                      <div className="pt-2 border-t border-white/5">
+                        <span className="text-[9px] font-black uppercase text-zinc-400 tracking-wider block mb-1.5">Formatting Issues</span>
+                        <div className="space-y-1.5 max-h-32 overflow-y-auto pr-1">
+                          {atsResult.formatting_issues.map((issue: any, i: number) => (
+                            <div key={i} className="text-[9px] text-zinc-400 leading-relaxed pl-3 border-l-2 border-red-500/40 py-0.5">
+                              <span className="font-bold text-red-400">[{issue.severity}]</span> {issue.fix}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                   </div>
                 ) : (
                   <div className="flex-1 flex flex-col items-center justify-center text-center p-6 min-h-[300px]">
                     <Cpu size={36} className="text-zinc-700 animate-pulse mb-3" />
-                    <h5 className="font-bold text-sm text-zinc-400">Alignment Undiagnosed</h5>
+                    <h5 className="font-bold text-sm text-zinc-400">Diagnosis Pending</h5>
                     <p className="text-xs text-zinc-600 mt-2 max-w-[200px] leading-relaxed">
-                      Enter job description details on the left, then click the Fit Index analyzer to execute comparisons.
+                      Upload your resume and click "Analyze ATS Score" to run 7-platform diagnostics.
                     </p>
                   </div>
                 )}
               </div>
 
-              <div className="mt-4 pt-4 border-t border-white/5 text-[10px] text-zinc-500 leading-relaxed">
-                ⚡ Local semantic index matches conceptual equivalences, so exact spelling matches aren't required.
+              <div className="mt-4 pt-4 border-t border-white/5 text-[9px] text-zinc-500 leading-relaxed">
+                ⚡ Research-backed engine simulates Workday, Greenhouse, Lever, iCIMS, Taleo, LinkedIn & SmartRecruiters scoring algorithms.
               </div>
             </div>
           </aside>
@@ -1387,3 +1663,4 @@ export function ResumeBuilder({ initialResume }: ResumeBuilderProps) {
     </div>
   );
 }
+
