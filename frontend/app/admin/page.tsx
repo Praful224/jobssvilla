@@ -24,6 +24,7 @@ import {
 import { apiFetch, getToken, Job, jsonHeaders } from "@/lib/api";
 import { AppShell } from "@/components/AppShell";
 import { TiltCard } from "@/components/TiltCard";
+import { motion, AnimatePresence } from "framer-motion";
 
 const emptyJob = {
   company: "",
@@ -410,16 +411,21 @@ export default function AdminPage() {
             </div>
           </div>
 
-          <div className="grid gap-8 lg:grid-cols-3">
+          <div className="grid gap-8 lg:grid-cols-12">
             {/* Job posting form */}
-            <div className="lg:col-span-1">
-              <TiltCard maxTilt={1.5} scale={1} className="glass-3d bg-white/[0.03] p-6 rounded-3xl border border-white/10 relative card-glow-cyan">
+            <div className="lg:col-span-5">
+              <motion.div
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4 }}
+                className="glass-3d bg-white/[0.03] p-6 rounded-3xl border border-white/10 relative card-glow-cyan"
+              >
                 <h2 className="text-sm font-extrabold uppercase tracking-widest text-white mb-5 flex items-center gap-2">
                   <Plus size={18} className="text-cyan-400" />
                   Upload Job Link
                 </h2>
 
-                <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3.5">
                   <div>
                     <label className="text-[10px] uppercase tracking-wider font-bold text-zinc-400 block mb-1">
                       Company Name *
@@ -468,7 +474,7 @@ export default function AdminPage() {
                     />
                   </div>
 
-                  <div>
+                  <div className="md:col-span-2">
                     <label className="text-[10px] uppercase tracking-wider font-bold text-zinc-400 block mb-1">
                       Skills Required (Comma separated)
                     </label>
@@ -480,7 +486,7 @@ export default function AdminPage() {
                     />
                   </div>
 
-                  <div>
+                  <div className="md:col-span-2">
                     <label className="text-[10px] uppercase tracking-wider font-bold text-zinc-400 block mb-1">
                       Posting / Apply Link *
                     </label>
@@ -492,7 +498,7 @@ export default function AdminPage() {
                     />
                   </div>
 
-                  <div>
+                  <div className="md:col-span-2">
                     <label className="text-[10px] uppercase tracking-wider font-bold text-zinc-400 block mb-1">
                       Job Description
                     </label>
@@ -509,7 +515,7 @@ export default function AdminPage() {
                 <div className="mt-6 flex flex-col gap-3">
                   <button
                     onClick={handlePostOpportunity}
-                    className="w-full rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 py-3.5 text-xs font-bold text-zinc-950 hover:brightness-110 shadow-lg shadow-cyan-500/10 flex items-center justify-center gap-2 transition"
+                    className="w-full rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 py-3.5 text-xs font-bold text-zinc-950 hover:brightness-110 shadow-lg shadow-cyan-500/10 flex items-center justify-center gap-2 transition cursor-pointer"
                   >
                     <Plus size={16} />
                     Publish Opportunity
@@ -525,11 +531,11 @@ export default function AdminPage() {
                     </p>
                   )}
                 </div>
-              </TiltCard>
+              </motion.div>
             </div>
 
             {/* Live opportunity catalog list */}
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-7">
               <div className="glass-3d bg-white/[0.01] p-6 rounded-3xl border border-white/5 relative">
                 <div className="flex items-center justify-between gap-4 mb-5">
                   <h2 className="text-sm font-extrabold uppercase tracking-widest text-white">

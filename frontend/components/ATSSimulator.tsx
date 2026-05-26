@@ -1,0 +1,570 @@
+import React, { useState, useEffect, useRef } from "react";
+import { UploadCloud, RefreshCw } from "lucide-react";
+import { apiFetch, API_BASE_URL } from "@/lib/api";
+import { PREDEFINED_JDS, ATS_PLATFORMS } from "@/lib/constants";
+
+// Evaluate the list against resumeText locally for predefined templates
+function evaluateKeywordsLocal(resumeText: string, keywords: any[]) {
+    const textLower = resumeText.toLowerCase();
+    return keywords.map(k => ({
+        ...k,
+        present: textLower.includes(k.kw.toLowerCase())
+    }));
+}
+
+function calculateScore(jd: any, ats: any) {
+  const reqTotal = jd.required.reduce((s: number, k: any) => s + k.weight, 0) || 1;
+  const reqMatched = jd.required.filter((k: any) => k.present).reduce((s: number, k: any) => s + k.weight, 0);
+  const reqScore = (reqMatched / reqTotal) * 60;
+
+  const prefTotal = jd.preferred.reduce((s: number, k: any) => s + k.weight, 0) || 1;
+  const prefMatched = jd.preferred.filter((k: any) => k.present).reduce((s: number, k: any) => s + k.weight, 0);
+  const prefScore = (prefMatched / prefTotal) * 20;
+
+  const titleScore = ats.titleBonus ? 9 : 10;
+  const certScore = ats.certBonus ? 5 : 3;
+  const eduScore = ats.educationBonus ? 4 : 3;
+
+  let raw = reqScore + prefScore + titleScore + certScore + eduScore + ats.modifier;
+  if (isNaN(raw)) raw = 0;
+  return Math.min(99, Math.round(raw));
+}
+
+function getGrade(score: number) {
+  if (score >= 90) return { grade: "A+", label: "Excellent Match", color: "#22c55e" };
+  if (score >= 80) return { grade: "A", label: "Strong Match", color: "#84cc16" };
+  if (score >= 70) return { grade: "B+", label: "Good Match", color: "#eab308" };
+  return { grade: "B", label: "Needs Optimization", color: "#f97316" };
+}
+
+function ScoreRing({ score, color, size = 120 }: { score: number, color: string, size?: number }) {
+  const [displayScore, setDisplayScore] = useState(0);
+  const r = 44;
+  const circ = 2 * Math.PI * r;
+  const dash = circ * (displayScore / 100);
+
+  useEffect(() => {
+    setDisplayScore(0);
+    const step = Math.max(1, score / 40);
+    let cur = 0;
+    const timer = setInterval(() => {
+      cur += step;
+      if (cur >= score) { setDisplayScore(score); clearInterval(timer); }
+      else setDisplayScore(Math.round(cur));
+    }, 18);
+    return () => clearInterval(timer);
+  }, [score]);
+
+  return (
+    <svg width={size} height={size} viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r={r} fill="none" stroke="#1e293b" strokeWidth="8" />
+      <circle
+        cx="50" cy="50" r={r} fill="none"
+        stroke={color} strokeWidth="8"
+        strokeLinecap="round"
+        strokeDasharray={`${dash} ${circ}`}
+        transform="rotate(-90 50 50)"
+        style={{ transition: "stroke-dasharray 0.05s linear" }}
+      />
+      <text x="50" y="46" textAnchor="middle" fill={color} fontSize="20" fontWeight="800" fontFamily="'Courier New', monospace">{displayScore}</text>
+      <text x="50" y="60" textAnchor="middle" fill="#64748b" fontSize="9" fontFamily="monospace">/100</text>
+    </svg>
+  );
+}
+
+function Pill({ kw, present, weight }: any) {
+  return (
+    <span style={{
+      display: "inline-flex", alignItems: "center", gap: 4,
+      padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600,
+      margin: "2px 3px", fontFamily: "monospace",
+      background: present ? "rgba(34,197,94,0.12)" : "rgba(239,68,68,0.12)",
+      color: present ? "#4ade80" : "#f87171",
+      border: `1px solid ${present ? "rgba(34,197,94,0.25)" : "rgba(239,68,68,0.25)"}`,
+    }}>
+      {present ? "✓" : "✗"} {kw}
+      <span style={{ opacity: 0.5, fontSize: 9 }}>×{weight}</span>
+    </span>
+  );
+}
+
+function Bar({ label, value, color }: any) {
+  return (
+    <div style={{ marginBottom: 10 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+        <span style={{ fontSize: 12, color: "#94a3b8" }}>{label}</span>
+        <span style={{ fontSize: 12, fontWeight: 700, color }}>{value}%</span>
+      </div>
+      <div style={{ height: 6, background: "#1e293b", borderRadius: 6, overflow: "hidden" }}>
+        <div style={{
+          height: "100%", width: `${value}%`, background: color,
+          borderRadius: 6, transition: "width 0.8s cubic-bezier(0.4,0,0.2,1)"
+        }} />
+      </div>
+    </div>
+  );
+}
+
+export function ATSSimulator({ initialResumeText = "" }: { initialResumeText?: string }) {
+  const [resumeText, setResumeText] = useState(initialResumeText);
+  const [selectedJD, setSelectedJD] = useState("custom");
+  const [selectedATS, setSelectedATS] = useState("workday");
+  const [activeTab, setActiveTab] = useState("score");
+  
+  // Custom JD state
+  const [customJdText, setCustomJdText] = useState("");
+  const [seniority, setSeniority] = useState("Mid-Level");
+  
+  const [scanning, setScanning] = useState(false);
+  const [scanned, setScanned] = useState(false);
+  const [scanLog, setScanLog] = useState<string[]>([]);
+  
+  // File upload state
+  const [uploadingFile, setUploadingFile] = useState(false);
+  
+  // File metadata states
+  const [uploadedFileName, setUploadedFileName] = useState<string | null>(
+    initialResumeText ? "Active Resume from Studio" : null
+  );
+  const [uploadedFileSize, setUploadedFileSize] = useState<string | null>(
+    initialResumeText ? "Auto-synced" : null
+  );
+  const [isBuilderData, setIsBuilderData] = useState(!!initialResumeText);
+  
+  // ATS Platform search & custom name states
+  const [platformQuery, setPlatformQuery] = useState("");
+  const [customAtsName, setCustomAtsName] = useState("");
+  
+  // Current active JD evaluated data
+  const [evaluatedJd, setEvaluatedJd] = useState<any>(null);
+  
+  const logRef = useRef<HTMLDivElement>(null);
+
+  // Sync initialResumeText with state when it changes
+  useEffect(() => {
+    if (initialResumeText) {
+      setResumeText(initialResumeText);
+      setUploadedFileName("Active Resume from Studio");
+      setUploadedFileSize("Auto-synced");
+      setIsBuilderData(true);
+    } else {
+      setResumeText("");
+      setUploadedFileName(null);
+      setUploadedFileSize(null);
+      setIsBuilderData(false);
+    }
+  }, [initialResumeText]);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      
+      setUploadingFile(true);
+      const formData = new FormData();
+      formData.append("file", file);
+      try {
+          const response = await fetch(`${API_BASE_URL}/resume/parse-file`, {
+              method: "POST",
+              body: formData
+          });
+          const data = await response.json();
+          if (data.text) {
+              setResumeText(data.text);
+              setUploadedFileName(file.name);
+              const sizeInKb = (file.size / 1024).toFixed(1);
+              setUploadedFileSize(`${sizeInKb} KB`);
+              setIsBuilderData(false);
+          }
+      } catch (err) {
+          console.error("Failed to upload/parse file", err);
+      } finally {
+          setUploadingFile(false);
+      }
+  };
+
+  const runScan = async () => {
+    if (!resumeText.trim()) {
+        alert("Please upload your resume document first.");
+        return;
+    }
+    setScanning(true);
+    setScanned(false);
+    setScanLog([]);
+    
+    // Animate logs
+    const addLog = (msg: string, delay: number) => {
+        setTimeout(() => {
+            setScanLog(prev => [...prev, msg]);
+            if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
+        }, delay);
+    };
+    
+    addLog("▶  Initializing ATS parser...", 100);
+    addLog(`▶  Platform: ${selectedATS === "other" ? (customAtsName || "Custom ATS") : ATS_PLATFORMS[selectedATS as keyof typeof ATS_PLATFORMS].label}`, 400);
+    addLog("▶  Extracting resume context...", 800);
+    
+    let finalJdData = null;
+    
+    if (selectedJD === "custom") {
+        if (!customJdText.trim()) {
+            alert("Please paste a custom Job Description.");
+            setScanning(false);
+            return;
+        }
+        addLog("▶  Contacting Gemini AI for semantic keyword extraction...", 1200);
+        
+        try {
+            const res = await apiFetch<any>("/resume/analyze-jd", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    resume_content: resumeText,
+                    jd_content: customJdText,
+                    target_role: "Custom Role",
+                    seniority: seniority
+                })
+            });
+            
+            // Expected schema: { required: [], preferred: [], missingKeywords: [], tips: [] }
+            finalJdData = {
+                ...PREDEFINED_JDS.custom,
+                required: res.required || [],
+                preferred: res.preferred || [],
+                missingKeywords: res.missingKeywords || [],
+                tips: res.tips || []
+            };
+            addLog(`▶  AI extracted ${finalJdData.required.length} required & ${finalJdData.preferred.length} preferred keywords.`, 3000);
+            
+        } catch (err) {
+            console.error("Failed to parse custom JD", err);
+            addLog("✗  Failed to communicate with AI.", 1500);
+            setScanning(false);
+            return;
+        }
+    } else {
+        const tpl = PREDEFINED_JDS[selectedJD as keyof typeof PREDEFINED_JDS];
+        finalJdData = {
+            ...tpl,
+            required: evaluateKeywordsLocal(resumeText, tpl.required),
+            preferred: evaluateKeywordsLocal(resumeText, tpl.preferred)
+        };
+        addLog(`▶  Template selected: ${tpl.label}. Evaluated keywords locally.`, 1200);
+    }
+    
+    setEvaluatedJd(finalJdData);
+    
+    setTimeout(() => {
+        addLog("▶  Applying ATS scoring weights...", 0);
+        addLog(`▶  Scan complete.`, 400);
+        setTimeout(() => {
+            setScanning(false);
+            setScanned(true);
+        }, 600);
+    }, selectedJD === "custom" ? 3500 : 1800);
+  };
+
+  const jd = evaluatedJd || PREDEFINED_JDS[selectedJD as keyof typeof PREDEFINED_JDS];
+  const ats = ATS_PLATFORMS[selectedATS as keyof typeof ATS_PLATFORMS];
+  const score = evaluatedJd ? calculateScore(jd, ats) : 0;
+  const grade = getGrade(score);
+
+  const reqMatched = jd.required.filter((k: any) => k.present);
+  const prefMatched = jd.preferred.filter((k: any) => k.present);
+
+  const reqPct = jd.required.length ? Math.round((reqMatched.length / jd.required.length) * 100) : 0;
+  const prefPct = jd.preferred.length ? Math.round((prefMatched.length / jd.preferred.length) * 100) : 0;
+
+  return (
+    <div className="bg-[#020817] text-slate-200 p-6 rounded-2xl border border-white/5 shadow-2xl">
+      {/* HEADER */}
+      <div className="flex flex-wrap gap-4 items-center justify-between mb-8 pb-4 border-b border-white/10">
+          <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 to-indigo-500 flex items-center justify-center text-xl shadow-lg shadow-cyan-500/20">
+                  ⚡
+              </div>
+              <div>
+                  <h2 className="text-xl font-black text-white tracking-tight">ATS Simulator Pro</h2>
+                  <p className="text-[10px] text-zinc-400 font-mono">Powered by Gemini AI & Semantic Search</p>
+              </div>
+          </div>
+      </div>
+
+      <div className="grid lg:grid-cols-[1fr_400px] gap-8">
+        
+        {/* LEFT COLUMN: Controls */}
+        <div className="space-y-6">
+            {/* Resume Input Area (File-driven) */}
+            <div className="space-y-3">
+                <div className="text-xs text-zinc-400 font-mono font-bold">1. YOUR RESUME</div>
+                
+                {resumeText ? (
+                    /* Active/Uploaded Resume Status Card */
+                    <div className="p-4 rounded-xl bg-zinc-950 border border-emerald-500/20 shadow-lg shadow-emerald-500/[0.02] flex items-center justify-between animate-in fade-in zoom-in-95 duration-200">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-xl text-emerald-400">
+                                📄
+                            </div>
+                            <div className="min-w-0">
+                                <h4 className="text-xs font-bold text-white tracking-wide truncate max-w-[200px]" title={uploadedFileName || "Resume Document"}>
+                                    {uploadedFileName || "Parsed Resume Document"}
+                                </h4>
+                                <p className="text-[10px] text-zinc-500 font-mono mt-0.5">
+                                    {isBuilderData ? "Auto-synced from Studio" : uploadedFileSize || "Successfully parsed"}
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-1.5">
+                            {initialResumeText && !isBuilderData && (
+                                <button
+                                    onClick={() => {
+                                        setResumeText(initialResumeText);
+                                        setUploadedFileName("Active Resume from Studio");
+                                        setUploadedFileSize("Auto-synced");
+                                        setIsBuilderData(true);
+                                    }}
+                                    className="p-1.5 bg-white/5 border border-white/10 rounded-lg text-[10px] font-bold font-mono text-zinc-400 hover:text-white transition flex items-center gap-1"
+                                    title="Reset to Active Builder Resume"
+                                >
+                                    <RefreshCw className="w-3.5 h-3.5" />
+                                </button>
+                            )}
+                            
+                            <label className="cursor-pointer p-1.5 bg-white/5 border border-white/10 rounded-lg text-zinc-400 hover:text-cyan-400 hover:border-cyan-500/30 transition flex items-center gap-1" title="Upload a different resume">
+                                <input type="file" accept=".pdf,.docx,.txt" className="hidden" onChange={handleFileUpload} />
+                                {uploadingFile ? (
+                                    <RefreshCw className="w-3.5 h-3.5 animate-spin text-cyan-400" />
+                                ) : (
+                                    <UploadCloud className="w-3.5 h-3.5" />
+                                )}
+                            </label>
+                            
+                            <button
+                                onClick={() => {
+                                    setResumeText("");
+                                    setUploadedFileName(null);
+                                    setUploadedFileSize(null);
+                                    setIsBuilderData(false);
+                                }}
+                                className="p-1.5 bg-rose-500/10 border border-rose-500/20 text-rose-400 hover:bg-rose-500/20 rounded-lg text-xs transition"
+                                title="Remove Resume"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                    </div>
+                ) : (
+                    /* Large Premium Upload Dropzone when empty */
+                    <label className="flex flex-col items-center justify-center border-2 border-dashed border-white/10 hover:border-cyan-500/30 bg-zinc-950/40 hover:bg-cyan-500/[0.01] rounded-2xl p-8 text-center cursor-pointer transition-all duration-300 group">
+                        <input type="file" accept=".pdf,.docx,.txt" className="hidden" onChange={handleFileUpload} />
+                        
+                        <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-center text-xl mb-4 group-hover:scale-110 group-hover:bg-cyan-500/10 group-hover:border-cyan-500/20 transition-all duration-300">
+                            {uploadingFile ? (
+                                <RefreshCw className="w-5 h-5 text-cyan-400 animate-spin" />
+                            ) : (
+                                <UploadCloud className="w-5 h-5 text-zinc-400 group-hover:text-cyan-400 transition-colors" />
+                            )}
+                        </div>
+                        
+                        <h4 className="text-xs font-bold text-zinc-300 group-hover:text-white transition-colors">
+                            {uploadingFile ? "Analyzing and parsing file..." : "Upload your resume"}
+                        </h4>
+                        <p className="text-[10px] text-zinc-500 font-mono mt-1 max-w-[200px] leading-relaxed">
+                            Drag & drop or browse PDF or Word (.docx) files. Fully secure.
+                        </p>
+                    </label>
+                )}
+            </div>
+
+            {/* Target Role Area */}
+            <div className="space-y-3">
+                <div className="text-xs text-zinc-400 font-mono font-bold">2. TARGET ROLE</div>
+                <div className="flex flex-wrap gap-2">
+                    {Object.entries(PREDEFINED_JDS).map(([key, j]) => (
+                        <button
+                            key={key}
+                            onClick={() => setSelectedJD(key)}
+                            className={`flex-1 min-w-[120px] px-3 py-3 rounded-xl border-2 transition text-left ${selectedJD === key ? 'bg-white/5' : 'border-white/5 bg-zinc-950'}`}
+                            style={{ borderColor: selectedJD === key ? j.color : undefined }}
+                        >
+                            <div className="text-lg mb-1">{j.icon}</div>
+                            <div className="text-xs font-bold text-white">{j.label}</div>
+                        </button>
+                    ))}
+                </div>
+                
+                {selectedJD === "custom" && (
+                    <div className="mt-4 p-4 border border-rose-500/30 bg-rose-500/5 rounded-xl space-y-4 animate-in fade-in slide-in-from-top-2">
+                        <div>
+                            <label className="text-[10px] uppercase font-bold text-zinc-400 block mb-1">Seniority Level</label>
+                            <select 
+                                value={seniority}
+                                onChange={(e) => setSeniority(e.target.value)}
+                                className="w-full bg-zinc-950 border border-white/10 rounded-lg p-2 text-xs text-white outline-none"
+                            >
+                                <option>Junior</option>
+                                <option>Mid-Level</option>
+                                <option>Senior</option>
+                                <option>Lead / Principal</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="text-[10px] uppercase font-bold text-zinc-400 block mb-1">Job Description Content</label>
+                            <textarea 
+                                value={customJdText}
+                                onChange={(e) => setCustomJdText(e.target.value)}
+                                placeholder="Paste the corporate JD text block here..."
+                                rows={6}
+                                className="w-full bg-zinc-950 border border-white/10 rounded-lg p-3 text-xs text-zinc-300 outline-none focus:border-rose-500 transition"
+                            />
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* ATS Platform */}
+            <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                    <div className="text-xs text-zinc-400 font-mono font-bold">3. ATS PLATFORM</div>
+                    <input 
+                        type="text"
+                        placeholder="Search platform..."
+                        value={platformQuery}
+                        onChange={(e) => setPlatformQuery(e.target.value)}
+                        className="bg-zinc-950 border border-white/10 rounded-md px-2 py-0.5 text-[10px] text-zinc-300 placeholder-zinc-600 focus:border-cyan-500 outline-none w-32 transition"
+                    />
+                </div>
+                
+                {/* Horizontal scroll container with beautiful custom scrollbar */}
+                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-transparent">
+                    {Object.entries(ATS_PLATFORMS)
+                        .filter(([key, a]) => 
+                            a.label.toLowerCase().includes(platformQuery.toLowerCase()) ||
+                            a.used.toLowerCase().includes(platformQuery.toLowerCase())
+                        )
+                        .map(([key, a]) => (
+                            <button
+                                key={key}
+                                onClick={() => setSelectedATS(key)}
+                                className={`flex-shrink-0 min-w-[140px] px-3 py-2 rounded-xl border-2 transition flex items-center gap-2 ${selectedATS === key ? 'bg-white/5' : 'border-white/5 bg-zinc-950'}`}
+                                style={{ borderColor: selectedATS === key ? a.color : undefined }}
+                            >
+                                <div className="w-6 h-6 rounded bg-white/5 flex flex-shrink-0 items-center justify-center text-xs font-black" style={{ color: a.color }}>
+                                    {a.logo}
+                                </div>
+                                <div className="text-left">
+                                    <div className="text-[11px] font-bold text-white leading-tight">{a.label}</div>
+                                    <div className="text-[8px] text-zinc-500 truncate w-20 leading-none mt-0.5">{a.used}</div>
+                                </div>
+                            </button>
+                        ))
+                    }
+                    {Object.entries(ATS_PLATFORMS).filter(([key, a]) => 
+                        a.label.toLowerCase().includes(platformQuery.toLowerCase()) ||
+                        a.used.toLowerCase().includes(platformQuery.toLowerCase())
+                    ).length === 0 && (
+                        <div className="text-xs text-zinc-500 py-2 w-full text-center">No matching ATS platforms found.</div>
+                    )}
+                </div>
+
+                {/* Custom ATS input field when 'other' is selected */}
+                {selectedATS === "other" && (
+                    <div className="animate-in fade-in slide-in-from-top-2 p-3 bg-zinc-950 border border-white/5 rounded-xl space-y-2">
+                        <label className="text-[9px] uppercase font-bold text-zinc-400 block">Custom ATS Platform Name</label>
+                        <input
+                            type="text"
+                            placeholder="e.g. Workable, IBM BrassRing, HireRight..."
+                            value={customAtsName}
+                            onChange={(e) => setCustomAtsName(e.target.value)}
+                            className="w-full bg-zinc-900 border border-white/10 rounded-lg p-2 text-xs text-white outline-none focus:border-zinc-500 transition"
+                        />
+                    </div>
+                )}
+            </div>
+
+            <button
+                onClick={runScan}
+                disabled={scanning}
+                className="w-full py-4 rounded-xl font-bold text-zinc-950 text-sm tracking-wide transition shadow-xl hover:brightness-110 active:scale-[0.98] flex items-center justify-center gap-2"
+                style={{ 
+                    background: scanning ? "#1e293b" : `linear-gradient(135deg, ${jd.color}, ${ats.color})`,
+                    color: scanning ? "#94a3b8" : "#fff" 
+                }}
+            >
+                {scanning ? <RefreshCw className="animate-spin w-4 h-4" /> : "▶ RUN FULL ATS SCAN"}
+            </button>
+            
+            {/* LOGS */}
+            {scanLog.length > 0 && (
+                <div ref={logRef} className="bg-zinc-950 border border-white/5 p-4 rounded-xl text-[10px] font-mono text-zinc-500 h-32 overflow-y-auto space-y-1">
+                    {scanLog.map((log, i) => (
+                        <div key={i} className={log.includes("✗") ? "text-rose-400" : log.includes("Complete") ? "text-emerald-400" : "text-cyan-400"}>{log}</div>
+                    ))}
+                    {scanning && <span className="animate-pulse text-cyan-400">█</span>}
+                </div>
+            )}
+        </div>
+
+        {/* RIGHT COLUMN: Results */}
+        <div>
+            {scanned && evaluatedJd ? (
+                <div className="animate-in fade-in slide-in-from-bottom-4 space-y-6">
+                    {/* Score Hero Card */}
+                    <div className="bg-zinc-900/50 border border-white/10 p-6 rounded-2xl flex flex-col items-center justify-center text-center relative overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent opacity-50" />
+                        <ScoreRing score={score} color={grade.color} size={160} />
+                        <div className="mt-4">
+                            <div className="text-3xl font-black font-mono tracking-widest" style={{ color: grade.color }}>{grade.grade}</div>
+                            <div className="text-xs text-zinc-400 uppercase tracking-widest mt-1 font-bold">{grade.label}</div>
+                        </div>
+                    </div>
+                    
+                    {/* Metrics Breakdown */}
+                    <div className="space-y-4 bg-zinc-950 border border-white/5 p-5 rounded-2xl">
+                        <Bar label="Required Keywords Match" value={reqPct} color={grade.color} />
+                        <Bar label="Preferred Keywords Match" value={prefPct} color={jd.color} />
+                        <Bar label="Title / Seniority Factor" value={ats.titleBonus ? 90 : 70} color="#a78bfa" />
+                    </div>
+
+                    {/* Keywords List */}
+                    <div className="bg-zinc-950 border border-white/5 p-5 rounded-2xl space-y-4">
+                        <div>
+                            <div className="text-[10px] text-zinc-500 font-mono font-bold uppercase mb-2">Required Keywords</div>
+                            <div className="flex flex-wrap gap-1">
+                                {evaluatedJd.required.map((k: any) => <Pill key={k.kw} {...k} />)}
+                            </div>
+                        </div>
+                        {evaluatedJd.preferred.length > 0 && (
+                            <div>
+                                <div className="text-[10px] text-zinc-500 font-mono font-bold uppercase mb-2">Preferred Keywords</div>
+                                <div className="flex flex-wrap gap-1">
+                                    {evaluatedJd.preferred.map((k: any) => <Pill key={k.kw} {...k} />)}
+                                </div>
+                            </div>
+                        )}
+                        {evaluatedJd.missingKeywords.length > 0 && (
+                            <div className="pt-2 border-t border-white/5">
+                                <div className="text-[10px] text-rose-500 font-mono font-bold uppercase mb-2">Missing Concepts (High Priority)</div>
+                                <div className="flex flex-wrap gap-1">
+                                    {evaluatedJd.missingKeywords.map((k: string) => (
+                                        <span key={k} className="px-2 py-1 bg-rose-500/10 text-rose-400 text-[10px] rounded border border-rose-500/20 font-bold">{k}</span>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            ) : (
+                <div className="h-full border border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center p-8 text-center bg-zinc-900/20">
+                    <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center text-2xl mb-4 opacity-50">📊</div>
+                    <h3 className="text-sm font-bold text-zinc-300">Awaiting Scan</h3>
+                    <p className="text-xs text-zinc-500 mt-2 max-w-[250px] leading-relaxed">
+                        Configure your target role and ATS platform on the left, then run the scan to see your compatibility matrix.
+                    </p>
+                </div>
+            )}
+        </div>
+      </div>
+    </div>
+  );
+}

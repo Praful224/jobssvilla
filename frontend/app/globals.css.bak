@@ -1,0 +1,233 @@
+@import "tailwindcss";
+
+:root, html[data-theme="dark"] {
+  --background: #060608;
+  --foreground: #f4f4f5;
+  --grid-color: rgba(255, 255, 255, 0.005);
+  --glass-bg: rgba(255, 255, 255, 0.02);
+  --glass-border: rgba(255, 255, 255, 0.06);
+}
+
+html[data-theme="light"] {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --grid-color: rgba(15, 23, 42, 0.015);
+  --glass-bg: rgba(15, 23, 42, 0.02);
+  --glass-border: rgba(15, 23, 42, 0.08);
+}
+
+html[data-theme="emerald"] {
+  --background: #022c22;
+  --foreground: #f0fdf4;
+  --grid-color: rgba(240, 253, 244, 0.005);
+  --glass-bg: rgba(240, 253, 244, 0.02);
+  --glass-border: rgba(240, 253, 244, 0.06);
+}
+
+html[data-theme="ocean"] {
+  --background: #0c4a6e;
+  --foreground: #f0f9ff;
+  --grid-color: rgba(240, 249, 255, 0.005);
+  --glass-bg: rgba(240, 249, 255, 0.02);
+  --glass-border: rgba(240, 249, 255, 0.06);
+}
+
+html[data-theme="purple"] {
+  --background: #1e1b4b;
+  --foreground: #faf5ff;
+  --grid-color: rgba(250, 245, 255, 0.005);
+  --glass-bg: rgba(250, 245, 255, 0.02);
+  --glass-border: rgba(250, 245, 255, 0.06);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.08) 0px, transparent 50%), 
+    radial-gradient(at 100% 0%, rgba(6, 182, 212, 0.08) 0px, transparent 50%),
+    linear-gradient(var(--grid-color) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  letter-spacing: 0;
+}
+
+/* Next-Gen 3D Glassmorphism & Glow styles */
+.glass-3d {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.05);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-3d:hover {
+  transform: translateY(-4px) scale(1.01);
+  border-color: rgba(52, 211, 153, 0.35);
+  box-shadow: 
+    0 15px 35px -10px rgba(0, 0, 0, 0.8),
+    0 0 20px 0px rgba(52, 211, 153, 0.15),
+    inset 0 1px 1px rgba(255, 255, 255, 0.1);
+}
+
+.card-glow-cyan {
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card-glow-cyan:hover {
+  transform: translateY(-4px) scale(1.01);
+  border-color: rgba(34, 211, 238, 0.35);
+  box-shadow: 
+    0 15px 35px -10px rgba(0, 0, 0, 0.8),
+    0 0 20px 0px rgba(34, 211, 238, 0.15),
+    inset 0 1px 1px rgba(255, 255, 255, 0.1);
+}
+
+.card-glow-amber {
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card-glow-amber:hover {
+  transform: translateY(-4px) scale(1.01);
+  border-color: rgba(252, 211, 77, 0.35);
+  box-shadow: 
+    0 15px 35px -10px rgba(0, 0, 0, 0.8),
+    0 0 20px 0px rgba(252, 211, 77, 0.15),
+    inset 0 1px 1px rgba(255, 255, 255, 0.1);
+}
+
+.neon-btn {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.neon-btn::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent,
+    rgba(255, 255, 255, 0.08),
+    transparent
+  );
+  transform: rotate(45deg);
+  transition: all 0.5s ease;
+  opacity: 0;
+}
+
+.neon-btn:hover::after {
+  left: 120%;
+  opacity: 1;
+}
+
+/* Cybernetic Glowing Cyber Matrix / Grid */
+.cyber-grid {
+  position: relative;
+  background-image: 
+    linear-gradient(rgba(255, 255, 255, 0.015) 1.5px, transparent 1.5px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1.5px, transparent 1.5px);
+  background-size: 50px 50px;
+}
+
+/* Animated Floating Mesh Blobs */
+.ambient-blob-1 {
+  position: absolute;
+  top: 10%;
+  left: -5%;
+  width: 450px;
+  height: 450px;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.12) 0%, transparent 70%);
+  filter: blur(60px);
+  z-index: -10;
+  animation: float-blob-1 25s infinite alternate ease-in-out;
+  pointer-events: none;
+}
+
+.ambient-blob-2 {
+  position: absolute;
+  bottom: 15%;
+  right: -5%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(6, 182, 212, 0.12) 0%, transparent 70%);
+  filter: blur(80px);
+  z-index: -10;
+  animation: float-blob-2 30s infinite alternate ease-in-out;
+  pointer-events: none;
+}
+
+.ambient-blob-3 {
+  position: absolute;
+  top: 45%;
+  left: 30%;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.08) 0%, transparent 70%);
+  filter: blur(70px);
+  z-index: -10;
+  animation: float-blob-3 28s infinite alternate ease-in-out;
+  pointer-events: none;
+}
+
+@keyframes float-blob-1 {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(60px, 40px) scale(1.1); }
+  100% { transform: translate(-40px, 80px) scale(0.9); }
+}
+
+@keyframes float-blob-2 {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-80px, -60px) scale(1.2); }
+  100% { transform: translate(40px, 30px) scale(0.8); }
+}
+
+@keyframes float-blob-3 {
+  0% { transform: translate(0, 0) scale(1.05); }
+  50% { transform: translate(30px, -50px) scale(0.9); }
+  100% { transform: translate(-50px, 20px) scale(1.1); }
+}
+
+/* Multi-colored moving border glow line */
+.cyber-border-flow {
+  position: relative;
+}
+.cyber-border-flow::before {
+  content: '';
+  position: absolute;
+  inset: -1.5px;
+  border-radius: 1.5rem;
+  padding: 1.5px;
+  background: linear-gradient(90deg, #10b981, #06b6d4, #f59e0b, #ec4899, #10b981);
+  background-size: 300% 300%;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: border-flow-animation 8s linear infinite;
+  pointer-events: none;
+}
+@keyframes border-flow-animation {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+

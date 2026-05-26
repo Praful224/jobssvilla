@@ -17,11 +17,14 @@ import {
   Check,
   X,
   Bell,
-  Settings
+  Settings,
+  Menu,
+  ChevronDown
 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
+import { motion, AnimatePresence } from "framer-motion";
 
-const navItems = [
+const mainNavItems = [
   { href: "/dashboard", label: "Home", icon: LayoutDashboard },
   { href: "/jobs", label: "Opportunities", icon: Briefcase },
   { href: "/resume", label: "Resume Forge", icon: Sparkles },
@@ -29,8 +32,6 @@ const navItems = [
   { href: "/mentorship", label: "MentorSphere", icon: Users },
   { href: "/community", label: "Circles", icon: MessageSquare },
   { href: "/profile", label: "Profile", icon: User },
-  { href: "/settings", label: "Settings", icon: Settings },
-  { href: "/admin", label: "Admin Control", icon: ShieldAlert },
 ];
 
 type AppShellProps = {
@@ -48,12 +49,14 @@ export function AppShell({ children, title, subtitle }: AppShellProps) {
   const [userInitial, setUserInitial] = useState<string>("?");
   const [notifications, setNotifications] = useState<any[]>([]);
   const [toasts, setToasts] = useState<any[]>([]);
-  const [activeTheme, setActiveTheme] = useState<string>("dark");
+  const [activeTheme, setActiveTheme] = useState<string>("light");
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Load and apply theme on initialization
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const savedTheme = localStorage.getItem("jobsvilla_theme") || "dark";
+      const savedTheme = localStorage.getItem("jobsvilla_theme") || "light";
       setActiveTheme(savedTheme);
       document.documentElement.setAttribute("data-theme", savedTheme);
 
@@ -166,13 +169,7 @@ export function AppShell({ children, title, subtitle }: AppShellProps) {
     router.push("/login");
   };
 
-  const filteredNavItems = navItems.filter((item) => {
-    if (item.href === "/admin") {
-      // Only admin can see the Admin Control panel
-      return role === "admin";
-    }
-    return true;
-  });
+
 
   if (!authorized) {
     return (
@@ -192,21 +189,150 @@ export function AppShell({ children, title, subtitle }: AppShellProps) {
   }
 
   return (
-    <main className="min-h-screen bg-transparent text-zinc-50">
-      <div className="flex min-h-screen">
-        <aside className="hidden w-72 border-r border-white/10 bg-zinc-950/40 backdrop-blur-md px-5 py-6 lg:flex lg:flex-col lg:justify-between">
-          <div>
-            <Link href="/" className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500 text-zinc-950">
-                <Compass size={22} />
-              </div>
-              <span className="text-2xl font-semibold tracking-normal">
-                Jobs<span className="text-emerald-400">Villa</span>
-              </span>
-            </Link>
+    <main className="min-h-screen bg-transparent text-zinc-800 dark:text-zinc-50 flex flex-col">
+      {/* Floating Premium Glassy Pill Navbar (Baselayer & Cartage inspired crystal design) */}
+      <header className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[95%] max-w-5xl rounded-full border border-black/5 dark:border-white/10 bg-white/70 dark:bg-zinc-950/70 backdrop-blur-xl px-5 py-2.5 shadow-xl shadow-black/[0.03] dark:shadow-black/60 transition-all duration-300">
+        <div className="flex items-center justify-between gap-4">
+          {/* Brand Logo */}
+          <Link href="/" className="flex items-center gap-2 group shrink-0">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#2f54eb] to-cyan-500 text-zinc-950 shadow-md group-hover:scale-105 transition duration-300">
+              <Compass size={14} className="animate-spin-slow text-white" />
+            </div>
+            <span className="text-sm font-black tracking-tight text-zinc-950 dark:text-white">
+              Jobs<span className="text-[#2f54eb] dark:text-emerald-400 group-hover:text-emerald-300 transition-colors">Villa</span>
+            </span>
+          </Link>
 
-            <nav className="mt-8 space-y-1">
-              {filteredNavItems.map((item) => {
+          {/* Desktop Navigation Links (Group 1) */}
+          <nav className="hidden lg:flex items-center gap-1">
+            {mainNavItems.map((item) => {
+              const Icon = item.icon;
+              const active = pathname === item.href || pathname?.startsWith(item.href + "/");
+
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10.5px] font-extrabold uppercase tracking-wider transition-all duration-300 ${
+                    active
+                      ? "bg-[#2f54eb] dark:bg-white text-white dark:text-zinc-950 shadow-[0_4px_12px_rgba(47,84,235,0.2)] dark:shadow-[0_4px_12px_rgba(255,255,255,0.15)] scale-[1.02]"
+                      : "text-zinc-500 dark:text-zinc-400 hover:text-[#2f54eb] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5"
+                  }`}
+                >
+                  <Icon size={12} />
+                  <span>{item.label}</span>
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* Right Controls: Notification Icon & Profile Toggle Dropdown (Group 2) */}
+          <div className="flex items-center gap-3 shrink-0">
+            {/* Notification Badge */}
+            {notifications.length > 0 && (
+              <div className="relative p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-white transition cursor-pointer">
+                <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-[#2f54eb] dark:bg-emerald-400 animate-ping" />
+                <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-[#2f54eb] dark:bg-emerald-400" />
+                <Bell size={13} />
+              </div>
+            )}
+
+            {/* Profile Pill Badge Toggle */}
+            <div className="relative">
+              <button
+                onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                className="flex items-center gap-2 bg-black/[0.02] dark:bg-white/[0.03] hover:bg-black/[0.05] dark:hover:bg-white/[0.06] border border-black/5 dark:border-white/5 hover:border-black/10 dark:hover:border-white/10 pl-2 pr-2.5 py-1 rounded-full transition cursor-pointer"
+              >
+                <div className="h-6 w-6 rounded-full bg-gradient-to-tr from-[#2f54eb] to-cyan-500 text-white flex items-center justify-center font-extrabold text-[10px] shadow-inner">
+                  {userInitial}
+                </div>
+                <span className="hidden sm:inline text-[10px] font-extrabold text-zinc-700 dark:text-zinc-200 uppercase tracking-wider truncate max-w-[80px]">
+                  {userName.split(" ")[0]}
+                </span>
+                <ChevronDown size={11} className={`text-zinc-500 dark:text-zinc-400 transition-transform duration-300 ${profileDropdownOpen ? "rotate-180" : ""}`} />
+              </button>
+
+              {/* Group 2 Dropdown Panel */}
+              <AnimatePresence>
+                {profileDropdownOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95, y: 5 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 5 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-0 top-full mt-2 w-60 rounded-2xl border border-black/5 dark:border-white/10 bg-white dark:bg-zinc-950/95 backdrop-blur-2xl p-4 shadow-2xl shadow-black/10 dark:shadow-black/90 flex flex-col gap-2.5 z-50"
+                  >
+                    <div className="px-2 py-1.5 border-b border-black/5 dark:border-white/5 pb-2.5">
+                      <p className="text-xs font-black text-zinc-950 dark:text-white truncate" title={userName}>{userName}</p>
+                      <p className="text-[9px] font-bold text-[#2f54eb] dark:text-emerald-400 uppercase tracking-widest mt-0.5">{role}</p>
+                    </div>
+
+                    <Link
+                      href="/profile"
+                      onClick={() => setProfileDropdownOpen(false)}
+                      className="flex items-center gap-2 rounded-xl px-2.5 py-2 text-xs font-bold text-zinc-650 dark:text-zinc-300 hover:bg-black/5 dark:hover:bg-white/5 hover:text-[#2f54eb] dark:hover:text-white transition"
+                    >
+                      <User size={13} className="text-[#2f54eb] dark:text-emerald-400" />
+                      <span>Profile Info</span>
+                    </Link>
+
+                    <Link
+                      href="/settings"
+                      onClick={() => setProfileDropdownOpen(false)}
+                      className="flex items-center gap-2 rounded-xl px-2.5 py-2 text-xs font-bold text-zinc-650 dark:text-zinc-300 hover:bg-black/5 dark:hover:bg-white/5 hover:text-cyan-500 dark:hover:text-white transition"
+                    >
+                      <Settings size={13} className="text-cyan-550 dark:text-cyan-400" />
+                      <span>Account Settings</span>
+                    </Link>
+
+                    {role === "admin" && (
+                      <Link
+                        href="/admin"
+                        onClick={() => setProfileDropdownOpen(false)}
+                        className="flex items-center gap-2 rounded-xl px-2.5 py-2 text-xs font-bold text-zinc-650 dark:text-zinc-300 hover:bg-black/5 dark:hover:bg-white/5 hover:text-red-500 dark:hover:text-white transition border border-red-550/10 dark:border-red-500/20 bg-red-500/[0.01]"
+                      >
+                        <ShieldAlert size={13} className="text-red-500 dark:text-red-400" />
+                        <span>Admin Control</span>
+                      </Link>
+                    )}
+
+                    <div className="border-t border-black/5 dark:border-white/5 mt-1 pt-2.5">
+                      <button
+                        onClick={() => {
+                          setProfileDropdownOpen(false);
+                          logout();
+                        }}
+                        className="w-full flex items-center gap-2 rounded-xl px-2.5 py-2 text-xs font-bold text-red-500 dark:text-red-400 hover:bg-red-500/10 transition text-left cursor-pointer"
+                      >
+                        <LogOut size={13} />
+                        <span>Log Out</span>
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Mobile Hamburger toggle */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="lg:hidden p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 border border-black/5 dark:border-white/5 hover:border-black/10 dark:hover:border-white/10 text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-white transition cursor-pointer"
+            >
+              {mobileMenuOpen ? <X size={14} /> : <Menu size={14} />}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile slide-down navigation menu */}
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.nav
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="lg:hidden overflow-hidden mt-3 flex flex-col gap-1 border-t border-black/5 dark:border-white/5 pt-3"
+            >
+              {mainNavItems.map((item) => {
                 const Icon = item.icon;
                 const active = pathname === item.href || pathname?.startsWith(item.href + "/");
 
@@ -214,95 +340,44 @@ export function AppShell({ children, title, subtitle }: AppShellProps) {
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition ${
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`flex items-center gap-3 rounded-xl px-4 py-3 text-xs font-bold transition ${
                       active
-                        ? "bg-white text-zinc-950 font-bold"
-                        : "text-zinc-300 hover:bg-white/10 hover:text-white"
+                        ? "bg-[#2f54eb] dark:bg-white text-white dark:text-zinc-950 font-extrabold"
+                        : "text-zinc-600 dark:text-zinc-400 hover:text-[#2f54eb] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5"
                     }`}
                   >
-                    <Icon size={18} />
+                    <Icon size={14} />
                     <span>{item.label}</span>
                   </Link>
                 );
               })}
-            </nav>
+            </motion.nav>
+          )}
+        </AnimatePresence>
+      </header>
+
+      {/* Main Workspace Body Content */}
+      <div className="flex-1 max-w-7xl w-full mx-auto px-4 pt-24 pb-12 md:px-8">
+        {title || subtitle ? (
+          <div className="mb-8 border-b border-white/5 pb-6">
+            <span className="text-[9px] font-extrabold uppercase tracking-[0.24em] text-emerald-400">
+              Workspace Console
+            </span>
+            {title ? (
+              <h1 className="mt-1 text-2xl font-black md:text-3xl text-white tracking-tight leading-none">
+                {title}
+              </h1>
+            ) : null}
+            {subtitle ? (
+              <p className="mt-2.5 max-w-3xl text-xs font-bold text-zinc-400 leading-relaxed">
+                {subtitle}
+              </p>
+            ) : null}
           </div>
-
-          <div className="mt-auto pt-6 border-t border-white/5 flex items-center justify-between">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="h-9 w-9 shrink-0 rounded-xl bg-gradient-to-tr from-emerald-500 to-cyan-500 text-zinc-950 flex items-center justify-center font-extrabold text-sm border border-white/10">
-                {userInitial}
-              </div>
-              <div className="text-left min-w-0">
-                <p className="text-xs font-bold text-zinc-200 truncate max-w-[130px]">{userName || "Loading..."}</p>
-                <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-extrabold">{role}</p>
-              </div>
-            </div>
-            <button
-              onClick={logout}
-              className="h-8 w-8 shrink-0 rounded-lg hover:bg-red-500/10 border border-transparent hover:border-red-500/20 text-zinc-400 hover:text-red-400 flex items-center justify-center transition"
-              title="Sign Out"
-            >
-              <LogOut size={16} />
-            </button>
-          </div>
-        </aside>
-
-        <section className="flex min-w-0 flex-1 flex-col bg-transparent">
-          <header className="sticky top-0 z-20 border-b border-white/10 bg-zinc-950/30 px-4 py-4 backdrop-blur-lg md:px-8">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="text-xs uppercase tracking-[0.24em] text-emerald-300">
-                  JobsVilla
-                </p>
-                {title ? (
-                  <h1 className="mt-1 text-2xl font-semibold md:text-3xl">
-                    {title}
-                  </h1>
-                ) : null}
-                {subtitle ? (
-                  <p className="mt-1 max-w-3xl text-sm text-zinc-400">
-                    {subtitle}
-                  </p>
-                ) : null}
-              </div>
-
-              <div className="flex items-center gap-2 lg:hidden">
-                <button
-                  onClick={logout}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-white/10 text-zinc-300 hover:bg-white/10 hover:text-white"
-                  title="Logout"
-                >
-                  <LogOut size={18} />
-                </button>
-              </div>
-            </div>
-
-            <nav className="mt-4 flex gap-2 overflow-x-auto pb-1 lg:hidden">
-              {filteredNavItems.map((item) => {
-                const Icon = item.icon;
-                const active = pathname === item.href || pathname?.startsWith(item.href + "/");
-
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`flex shrink-0 items-center gap-2 rounded-md px-3 py-2 text-sm ${
-                      active
-                        ? "bg-white text-zinc-950 font-bold"
-                        : "bg-white/5 text-zinc-300"
-                    }`}
-                  >
-                    <Icon size={16} />
-                    {item.label}
-                  </Link>
-                );
-              })}
-            </nav>
-          </header>
-
-          <div className="flex-1 px-4 py-6 md:px-8">{children}</div>
-        </section>
+        ) : null}
+        
+        {children}
       </div>
 
       {/* Dynamic Toast Notifications */}

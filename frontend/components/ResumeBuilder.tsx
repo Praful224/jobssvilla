@@ -75,7 +75,8 @@ const DEFAULT_RESUME_DATA = {
       duration: "2022 -- 2026",
       details: "GPA: 9.2/10. Specialization in Cryptography and Distributed Systems."
     }
-  ]
+  ],
+  custom_sections: []
 };
 
 export function ResumeBuilder({ initialResume }: ResumeBuilderProps) {
@@ -84,31 +85,36 @@ export function ResumeBuilder({ initialResume }: ResumeBuilderProps) {
   // Main structured resume data state
   const [fileName, setFileName] = useState(initialResume?.file_name || "My_Resume");
   const [resumeData, setResumeData] = useState<any>(() => {
+    let data: any = DEFAULT_RESUME_DATA;
     if (initialResume?.content) {
       try {
         const parsed = JSON.parse(initialResume.content);
         if (parsed && typeof parsed === "object" && parsed.name) {
-          return parsed;
+          data = parsed;
         }
       } catch (e) {
         console.error("Failed to parse initial resume content JSON:", e);
       }
     }
-    return DEFAULT_RESUME_DATA;
+    if (!data.custom_sections) {
+      data.custom_sections = [];
+    }
+    return data;
   });
 
   // Accordion active sections
-  const [openSections, setOpenSections] = useState({
+  const [openSections, setOpenSections] = useState<any>({
     header: true,
     summary: true,
     skills: true,
     experience: true,
     projects: true,
     education: true,
+    customSections: true,
   });
 
-  const toggleSection = (sec: keyof typeof openSections) => {
-    setOpenSections((prev) => ({ ...prev, [sec]: !prev[sec] }));
+  const toggleSection = (sec: string) => {
+    setOpenSections((prev: any) => ({ ...prev, [sec]: !prev[sec] }));
   };
 
   // Compiler and Exporter states
@@ -313,6 +319,32 @@ export function ResumeBuilder({ initialResume }: ResumeBuilderProps) {
     }));
   };
 
+  // Custom Sections handlers
+  const handleCustomSectionChange = (idx: number, field: "title" | "content", val: string) => {
+    setResumeData((prev: any) => {
+      const updated = [...(prev.custom_sections || [])];
+      updated[idx] = { ...updated[idx], [field]: val };
+      return { ...prev, custom_sections: updated };
+    });
+  };
+
+  const addCustomSection = () => {
+    setResumeData((prev: any) => ({
+      ...prev,
+      custom_sections: [
+        ...(prev.custom_sections || []),
+        { id: Math.random().toString(36).substring(2, 9), title: "", content: "" }
+      ]
+    }));
+  };
+
+  const removeCustomSection = (idx: number) => {
+    setResumeData((prev: any) => ({
+      ...prev,
+      custom_sections: (prev.custom_sections || []).filter((_: any, i: number) => i !== idx)
+    }));
+  };
+
   // In-line STAR Bullet Point Enhancer Action
   const triggerStarEnhance = async (type: "exp" | "prj", itemIdx: number, bulletIdx: number, currentText: string) => {
     if (!currentText.trim()) {
@@ -460,12 +492,12 @@ export function ResumeBuilder({ initialResume }: ResumeBuilderProps) {
     setJdMatching(true);
     setStatus("Computing offline semantic overlap...");
     try {
-      // Serialize our resume state to clear text for analysis matching
       const resumeClearText = `
         ${resumeData.name} ${resumeData.summary}
         Skills: ${resumeData.skills.map((s: any) => `${s.category}: ${s.items}`).join(", ")}
         Experience: ${resumeData.experience.map((e: any) => `${e.role} at ${e.company}. ${e.bullets.join(" ")}`).join(" ")}
         Projects: ${resumeData.projects.map((p: any) => `${p.title}. ${p.bullets.join(" ")}`).join(" ")}
+        ${(resumeData.custom_sections || []).map((c: any) => `${c.title}: ${c.content}`).join(" ")}
       `;
 
       const data = await apiFetch<any>("/resume/analyze-jd", {
@@ -1113,6 +1145,67 @@ export function ResumeBuilder({ initialResume }: ResumeBuilderProps) {
                       >
                         <Plus size={14} />
                         Add Academic Credential
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* SECTION 7: CUSTOM COLUMNS / SECTIONS */}
+                <div className="border border-white/10 rounded-xl overflow-hidden bg-white/[0.01]">
+                  <button
+                    onClick={() => toggleSection("customSections")}
+                    className="w-full flex items-center justify-between p-4 bg-white/5 text-sm font-bold text-white hover:bg-white/10 transition"
+                  >
+                    <span className="flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                      7. Custom Columns & Sections ({(resumeData.custom_sections || []).length})
+                    </span>
+                    {openSections.customSections ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                  </button>
+                  {openSections.customSections && (
+                    <div className="p-4 space-y-6">
+                      {(resumeData.custom_sections || []).map((section: any, idx: number) => (
+                        <div key={section.id || idx} className="p-4 border border-white/10 rounded-xl bg-zinc-950/20 space-y-3 relative">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">Custom Section #{idx + 1}</span>
+                            <button
+                              onClick={() => removeCustomSection(idx)}
+                              className="p-1.5 rounded bg-white/5 text-zinc-400 hover:text-red-400 hover:bg-red-500/10 transition"
+                              title="Delete Section"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+
+                          <div className="space-y-3">
+                            <div>
+                              <label className="text-[9px] uppercase font-bold text-zinc-500 block mb-1">Section Title</label>
+                              <input
+                                value={section.title}
+                                onChange={(e) => handleCustomSectionChange(idx, "title", e.target.value)}
+                                placeholder="e.g. Certifications / Achievements / Languages"
+                                className="w-full rounded-lg border border-white/10 bg-zinc-950 px-3 py-1.5 text-xs text-white outline-none focus:border-emerald-500 transition"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[9px] uppercase font-bold text-zinc-500 block mb-1">Section Details / Content</label>
+                              <textarea
+                                value={section.content}
+                                onChange={(e) => handleCustomSectionChange(idx, "content", e.target.value)}
+                                placeholder="e.g. Google Certified Professional Architect (2026), Fluent in German..."
+                                rows={4}
+                                className="w-full rounded-lg border border-white/10 bg-zinc-950 px-3 py-2 text-xs text-zinc-300 outline-none focus:border-emerald-500 transition resize-y font-mono"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      <button
+                        onClick={addCustomSection}
+                        className="w-full flex items-center justify-center gap-1 py-2 border border-dashed border-white/20 hover:border-emerald-400 text-xs text-zinc-300 hover:text-emerald-400 rounded-lg hover:bg-emerald-400/[0.02] transition font-bold"
+                      >
+                        <Plus size={14} />
+                        Add Custom Section
                       </button>
                     </div>
                   )}
