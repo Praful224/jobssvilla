@@ -395,23 +395,22 @@ export default function JobsPage() {
               </div>
 
               {/* Jobs Catalog */}
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              <div className="flex flex-col gap-6 w-full">
                 {sortedJobs.length > 0 ? (
                   sortedJobs.map((job) => (
-                    <TiltCard key={job.id} maxTilt={4} scale={1.01}>
-                      <JobCard
-                        job={job}
-                        onSave={handleSaveJob}
-                        onTrack={handleTrackApplication}
-                        match={matches.find((m) => m.job_id === job.id)}
-                      />
-                    </TiltCard>
+                    <JobCard
+                      key={job.id}
+                      job={job}
+                      onSave={handleSaveJob}
+                      onTrack={handleTrackApplication}
+                      match={matches.find((m) => m.job_id === job.id)}
+                    />
                   ))
                 ) : (
-                  <div className="col-span-full text-center py-20 border border-dashed border-white/5 rounded-3xl bg-zinc-950/20 backdrop-blur-sm">
-                    <Briefcase size={36} className="mx-auto text-zinc-700 mb-3" />
-                    <p className="text-xs text-zinc-500 uppercase tracking-widest font-bold">No active opportunities found</p>
-                    <p className="text-[11px] text-zinc-600 mt-1">Try modifying your search query or trigger a Sync</p>
+                  <div className="col-span-full text-center py-20 border border-dashed border-black/10 dark:border-white/5 rounded-3xl bg-black/[0.01] dark:bg-zinc-950/20 backdrop-blur-sm">
+                    <Briefcase size={36} className="mx-auto text-zinc-400 dark:text-zinc-700 mb-3" />
+                    <p className="text-xs text-foreground uppercase tracking-widest font-bold">No active opportunities found</p>
+                    <p className="text-[11px] text-zinc-500 dark:text-zinc-600 mt-1">Try modifying your search query or trigger a Sync</p>
                   </div>
                 )}
               </div>
@@ -424,31 +423,22 @@ export default function JobsPage() {
               <h3 className="text-xs font-extrabold uppercase tracking-widest text-zinc-400 border-b border-white/5 pb-4">
                 Saved & Bookmarked Board ({savedJobs.length})
               </h3>
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              <div className="flex flex-col gap-6 w-full">
                 {savedJobs.length > 0 ? (
                   savedJobs.map((job) => (
-                    <div key={job.job_id} className="relative group">
-                      <TiltCard maxTilt={4} scale={1.01}>
-                        <JobCard
-                          job={{ ...job, id: job.job_id }}
-                          onTrack={() => handleTrackApplication({ ...job, id: job.job_id })}
-                          match={matches.find((m) => m.job_id === job.job_id)}
-                        />
-                      </TiltCard>
-                      <button
-                        onClick={() => handleRemoveSaved(job.job_id, job.role)}
-                        className="absolute right-3.5 top-3.5 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-zinc-900 border border-white/10 text-zinc-400 hover:bg-red-500/20 hover:text-red-400 transition hover:border-red-500/30 shadow-lg"
-                        title="Remove Bookmark"
-                      >
-                        <Trash2 size={15} />
-                      </button>
-                    </div>
+                    <JobCard
+                      key={job.job_id}
+                      job={{ ...job, id: job.job_id }}
+                      onTrack={() => handleTrackApplication({ ...job, id: job.job_id })}
+                      onRemove={() => handleRemoveSaved(job.job_id, job.role)}
+                      match={matches.find((m) => m.job_id === job.job_id)}
+                    />
                   ))
                 ) : (
-                  <div className="col-span-full text-center py-20 border border-dashed border-white/5 rounded-3xl bg-zinc-950/20 backdrop-blur-sm">
-                    <Bookmark size={36} className="mx-auto text-zinc-700 mb-3" />
-                    <p className="text-xs text-zinc-500 uppercase tracking-widest font-bold">No saved jobs</p>
-                    <p className="text-[11px] text-zinc-600 mt-1">Click the bookmark icon on jobs to save them here</p>
+                  <div className="col-span-full text-center py-20 border border-dashed border-black/10 dark:border-white/5 rounded-3xl bg-black/[0.01] dark:bg-zinc-950/20 backdrop-blur-sm">
+                    <Bookmark size={36} className="mx-auto text-zinc-450 dark:text-zinc-700 mb-3" />
+                    <p className="text-xs text-foreground uppercase tracking-widest font-bold">No saved jobs</p>
+                    <p className="text-[11px] text-zinc-500 dark:text-zinc-600 mt-1">Click the bookmark icon on jobs to save them here</p>
                   </div>
                 )}
               </div>

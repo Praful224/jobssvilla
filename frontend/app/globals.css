@@ -1,15 +1,73 @@
 @import "tailwindcss";
 
+@variant dark (html[data-theme="dark"], html[data-theme="dark"] *);
+
 /* ═══════════════════════════════════════════════════
    THEME VARIABLES
 ═══════════════════════════════════════════════════ */
 :root,
 html[data-theme="light"] {
   --background: #f4f6fb;
-  --foreground: #0f172a;
+  --foreground: #000000; /* Solid bold black for maximum readability */
   --grid-color: rgba(47, 84, 235, 0.045);
-  --glass-bg: rgba(255, 255, 255, 0.7);
-  --glass-border: rgba(0, 0, 0, 0.05);
+  --glass-bg: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(0, 0, 0, 0.12);
+}
+
+html[data-theme="light"] {
+  /* Force high-contrast bold black text visibility on hardcoded light/grey classes in Light Mode */
+  .text-white,
+  .text-zinc-50,
+  .text-zinc-100,
+  .text-zinc-200,
+  .text-zinc-300,
+  .text-zinc-400,
+  .text-zinc-500,
+  .text-slate-400,
+  .text-slate-500,
+  .text-slate-600 {
+    color: #000000 !important;
+    font-weight: 700; /* Higher intensity font weight for maximum readability */
+  }
+
+  /* Specific bypass for dark buttons/elements in light mode to keep text white */
+  .text-white-force {
+    color: #ffffff !important;
+  }
+
+  /* Make subtext/descriptions readable and crisp */
+  p, 
+  .text-zinc-500,
+  .text-zinc-400 {
+    color: #1a1a1a !important;
+    font-weight: 600 !important;
+  }
+
+  /* Make borders and transparent background cards perfectly visible */
+  .border-white\/10,
+  .border-white\/5,
+  .border-white\/20 {
+    border-color: rgba(0, 0, 0, 0.12) !important;
+  }
+  
+  .bg-white\/\[0\.02\],
+  .bg-white\/\[0\.01\],
+  .bg-white\/\[0\.03\],
+  .bg-white\/\[0\.05\],
+  .bg-zinc-950\/60,
+  .bg-zinc-950\/70 {
+    background-color: rgba(255, 255, 255, 0.75) !important;
+    backdrop-filter: blur(20px) !important;
+  }
+
+  input,
+  select,
+  textarea {
+    color: #000000 !important;
+    font-weight: 600 !important;
+    background-color: rgba(255, 255, 255, 0.9) !important;
+    border-color: rgba(0, 0, 0, 0.2) !important;
+  }
 }
 
 html[data-theme="dark"] {

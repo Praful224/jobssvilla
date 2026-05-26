@@ -25,13 +25,42 @@ import { apiFetch } from "@/lib/api";
 import { motion, AnimatePresence } from "framer-motion";
 
 const mainNavItems = [
-  { href: "/dashboard", label: "Home", icon: LayoutDashboard },
-  { href: "/jobs", label: "Opportunities", icon: Briefcase },
-  { href: "/resume", label: "Resume Forge", icon: Sparkles },
-  { href: "/roadmap", label: "SkillGraph", icon: Compass },
-  { href: "/mentorship", label: "MentorSphere", icon: Users },
-  { href: "/community", label: "Circles", icon: MessageSquare },
-  { href: "/profile", label: "Profile", icon: User },
+  { 
+    href: "/dashboard", 
+    label: "Home", 
+    icon: LayoutDashboard,
+    description: "Access your consolidated workspace dashboard and console notifications."
+  },
+  { 
+    href: "/jobs", 
+    label: "Opportunities", 
+    icon: Briefcase,
+    description: "Explore high-paying tech jobs and track your active applications."
+  },
+  { 
+    href: "/resume", 
+    label: "Resume Forge", 
+    icon: Sparkles,
+    description: "Create, tailor, and optimize your resumes with our advanced AI ATS score scanner."
+  },
+  { 
+    href: "/roadmap", 
+    label: "SkillGraph", 
+    icon: Compass,
+    description: "Map out customized roadmap steps and identify engineering skill gaps."
+  },
+  { 
+    href: "/mentorship", 
+    label: "MentorSphere", 
+    icon: Users,
+    description: "Book 1:1 sessions and Mock interviews with verified industry mentors."
+  },
+  { 
+    href: "/community", 
+    label: "Circles", 
+    icon: MessageSquare,
+    description: "Network, share posts, and collaborate inside developer community circles."
+  },
 ];
 
 type AppShellProps = {
@@ -52,6 +81,7 @@ export function AppShell({ children, title, subtitle }: AppShellProps) {
   const [activeTheme, setActiveTheme] = useState<string>("light");
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [hoveredNavItem, setHoveredNavItem] = useState<any | null>(null);
 
   // Load and apply theme on initialization
   useEffect(() => {
@@ -190,21 +220,33 @@ export function AppShell({ children, title, subtitle }: AppShellProps) {
 
   return (
     <main className="min-h-screen bg-transparent text-zinc-800 dark:text-zinc-50 flex flex-col">
-      {/* Floating Premium Glassy Pill Navbar (Baselayer & Cartage inspired crystal design) */}
-      <header className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[95%] max-w-5xl rounded-full border border-black/5 dark:border-white/10 bg-white/70 dark:bg-zinc-950/70 backdrop-blur-xl px-5 py-2.5 shadow-xl shadow-black/[0.03] dark:shadow-black/60 transition-all duration-300">
-        <div className="flex items-center justify-between gap-4">
-          {/* Brand Logo */}
-          <Link href="/" className="flex items-center gap-2 group shrink-0">
+      {/* Outside Fixed Premium Brand Logo (visible on desktop) */}
+      <div className="fixed top-6 left-8 z-50 hidden lg:flex items-center gap-2">
+        <Link href="/" className="flex items-center gap-2.5 group">
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-[#2f54eb] to-cyan-500 text-white shadow-lg shadow-[#2f54eb]/20 group-hover:scale-105 transition duration-300">
+            <Compass size={16} className="animate-spin-slow" />
+          </div>
+          <span className="text-base font-black tracking-tight text-foreground">
+            Jobs<span className="text-[#2f54eb] dark:text-emerald-400 group-hover:text-emerald-300 transition-colors">Villa</span>
+          </span>
+        </Link>
+      </div>
+
+      {/* Floating Premium Glassy Pill Navbar (Baselayer & Cartage inspired crystal design - Right-aligned & Transparent) */}
+      <header className="fixed top-4 right-6 md:right-8 left-auto z-50 w-auto bg-transparent border-none shadow-none transition-all duration-300">
+        <div className="flex items-center gap-4">
+          {/* Brand Logo (mobile/tablet only) */}
+          <Link href="/" className="flex lg:hidden items-center gap-2 group shrink-0">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#2f54eb] to-cyan-500 text-zinc-950 shadow-md group-hover:scale-105 transition duration-300">
               <Compass size={14} className="animate-spin-slow text-white" />
             </div>
-            <span className="text-sm font-black tracking-tight text-zinc-950 dark:text-white">
+            <span className="text-sm font-black tracking-tight text-foreground">
               Jobs<span className="text-[#2f54eb] dark:text-emerald-400 group-hover:text-emerald-300 transition-colors">Villa</span>
             </span>
           </Link>
 
           {/* Desktop Navigation Links (Group 1) */}
-          <nav className="hidden lg:flex items-center gap-1">
+          <nav className="relative hidden lg:flex items-center gap-1">
             {mainNavItems.map((item) => {
               const Icon = item.icon;
               const active = pathname === item.href || pathname?.startsWith(item.href + "/");
@@ -213,17 +255,43 @@ export function AppShell({ children, title, subtitle }: AppShellProps) {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10.5px] font-extrabold uppercase tracking-wider transition-all duration-300 ${
+                  onMouseEnter={() => setHoveredNavItem(item)}
+                  onMouseLeave={() => setHoveredNavItem(null)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-[10.5px] font-extrabold uppercase tracking-wider transition-all duration-300 ${
                     active
-                      ? "bg-[#2f54eb] dark:bg-white text-white dark:text-zinc-950 shadow-[0_4px_12px_rgba(47,84,235,0.2)] dark:shadow-[0_4px_12px_rgba(255,255,255,0.15)] scale-[1.02]"
-                      : "text-zinc-500 dark:text-zinc-400 hover:text-[#2f54eb] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5"
+                      ? "text-foreground font-black scale-[1.01]"
+                      : "text-foreground/70 hover:text-foreground"
                   }`}
                 >
-                  <Icon size={12} />
+                  <Icon size={11} />
                   <span>{item.label}</span>
                 </Link>
               );
             })}
+
+            {/* Premium Animated Crystal Tooltip explaining workspace feature on hover */}
+            <AnimatePresence>
+              {hoveredNavItem && (
+                <motion.div
+                  initial={{ opacity: 0, y: -6, scale: 0.97 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -6, scale: 0.97 }}
+                  transition={{ duration: 0.15, ease: "easeOut" }}
+                  className="absolute top-[125%] left-1/2 -translate-x-1/2 w-80 rounded-2xl border border-black/5 dark:border-white/10 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-2xl p-3 shadow-2xl pointer-events-none flex flex-col gap-1 z-50 text-center"
+                >
+                  <div className="flex items-center justify-center gap-1.5 text-zinc-950 dark:text-white font-extrabold text-[10.5px] uppercase tracking-wider">
+                    {(() => {
+                      const HoverIcon = hoveredNavItem.icon;
+                      return <HoverIcon size={12} className="text-[#2f54eb] dark:text-emerald-400" />;
+                    })()}
+                    <span>{hoveredNavItem.label}</span>
+                  </div>
+                  <p className="text-[10px] text-zinc-500 dark:text-zinc-400 leading-relaxed font-bold mt-1">
+                    {hoveredNavItem.description}
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </nav>
 
           {/* Right Controls: Notification Icon & Profile Toggle Dropdown (Group 2) */}

@@ -23,30 +23,6 @@ const presetThemes = [
     accentClass: "bg-teal-600",
     textClass: "text-slate-600",
   },
-  {
-    id: "emerald",
-    name: "Emerald Glass",
-    desc: "Rich high-fidelity translucent emerald",
-    bgClass: "bg-[#022C22]",
-    accentClass: "bg-emerald-400",
-    textClass: "text-emerald-300",
-  },
-  {
-    id: "ocean",
-    name: "Ocean Breeze",
-    desc: "Deep oceanic cobalt with cyan-teal glass",
-    bgClass: "bg-[#0F172A]",
-    accentClass: "bg-cyan-400",
-    textClass: "text-cyan-300",
-  },
-  {
-    id: "purple",
-    name: "Midnight Purple",
-    desc: "Celestial violet with deep indigo neon gradients",
-    bgClass: "bg-[#1E1B4B]",
-    accentClass: "bg-fuchsia-500",
-    textClass: "text-fuchsia-300",
-  },
 ];
 
 export default function SettingsPage() {
