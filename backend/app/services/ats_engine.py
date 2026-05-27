@@ -524,9 +524,49 @@ def score_keywords(resume_text: str, jd_text: str) -> Dict:
     resume_lower = resume_text.lower()
     jd_lower = jd_text.lower()
 
-    # 1. Detect Job Level and Domain from Job Description (JD)
-    jd_level_band, jd_level_label = detect_seniority(jd_text)
-    jd_domain = _detect_job_domain(jd_text)
+    # Generic resume Mode fallback
+    generic_mode = not jd_text.strip()
+    effective_text_for_detection = resume_text if generic_mode else jd_text
+
+    # 1. Detect Job Level and Domain
+    jd_level_band, jd_level_label = detect_seniority(effective_text_for_detection)
+    jd_domain = _detect_job_domain(effective_text_for_detection)
+
+    # Industry standard benchmarks for generic matching when no JD is provided
+    DOMAIN_CHECKLISTS = {
+        "DevOps/SRE": [
+            "AWS", "Docker", "Kubernetes", "Terraform", "CI/CD", "Jenkins", 
+            "GitHub Actions", "Prometheus", "Grafana", "Linux", "Bash", 
+            "Python", "DevSecOps", "Vault", "Site Reliability", "FinOps", 
+            "Disaster Recovery", "Ansible", "ELK Stack", "Multi-Cloud"
+        ],
+        "Backend/Software Engineering": [
+            "Python", "Java", "Go", "TypeScript", "JavaScript", "SQL", 
+            "PostgreSQL", "MySQL", "MongoDB", "Redis", "Docker", "Kubernetes", 
+            "REST API", "Microservices", "GraphQL", "Agile", "Linux", 
+            "GitHub Actions", "Disaster Recovery"
+        ],
+        "Data Engineering": [
+            "Python", "SQL", "Spark", "Airflow", "dbt", "Snowflake", 
+            "Data Lake", "ETL", "PostgreSQL", "Kafka", "AWS", "GCP", 
+            "Docker", "Linux", "Agile"
+        ],
+        "ML/AI": [
+            "Python", "TensorFlow", "PyTorch", "MLOps", "SQL", "Docker", 
+            "Kubernetes", "AWS", "FastAPI", "REST API", "Linux"
+        ],
+        "Frontend": [
+            "TypeScript", "JavaScript", "React", "REST API", "GraphQL", 
+            "Agile", "GitHub Actions", "CI/CD"
+        ],
+        "QA/Testing": [
+            "Python", "JavaScript", "TypeScript", "CI/CD", "Agile", "Linux", "REST API"
+        ],
+        "Management": [
+            "Leadership", "Communication", "Project Management", "Agile", 
+            "REST API", "SQL"
+        ]
+    }
 
     # Categorize skills for level-based weighting
     ARCHITECTURE_SKILLS = {
@@ -539,32 +579,41 @@ def score_keywords(resume_text: str, jd_text: str) -> Dict:
         "Leadership", "Communication", "Project Management", "Agile"
     }
 
-    # 2. Extract JD keywords and apply dynamic seniority weights
+    # 2. Extract JD keywords or Fallback to Generic Checklists
     jd_skills: Dict[str, float] = {}
-    for canon, aliases in SKILL_ONTOLOGY.items():
-        count = 0
-        for tok in [canon.lower()] + aliases:
-            count += len(re.findall(rf"\b{re.escape(tok)}\b", jd_lower))
-        if count > 0:
-            # Base weight from JD term frequency
-            weight = count
-            
-            # Apply dynamic seniority multipliers
-            if jd_level_band >= 3:  # Senior, Lead, Director
-                if canon in ARCHITECTURE_SKILLS:
-                    weight *= 2.5  # Strongly prioritize architecture and SRE skills
-                elif canon in SOFT_SKILLS:
-                    weight *= 1.5  # Boost leadership and agile delivery skills
-            elif jd_level_band <= 1:  # Intern, Junior
-                if canon in ARCHITECTURE_SKILLS:
-                    weight *= 0.5  # Architectural patterns are nice-to-have
-                else:
-                    weight *= 2.0  # Foundational coding/tools are highly weighted
-                    
-            jd_skills[canon] = weight
+    
+    if generic_mode:
+        # Populate using domain standard checklist
+        checklist = DOMAIN_CHECKLISTS.get(jd_domain, DOMAIN_CHECKLISTS["Backend/Software Engineering"])
+        for canon in checklist:
+            if canon in SKILL_ONTOLOGY:
+                # Give standard base weight
+                jd_skills[canon] = 2.0
+    else:
+        # standard extraction from JD
+        for canon, aliases in SKILL_ONTOLOGY.items():
+            count = 0
+            for tok in [canon.lower()] + aliases:
+                count += len(re.findall(rf"\b{re.escape(tok)}\b", jd_lower))
+            if count > 0:
+                jd_skills[canon] = float(count)
+
+    # 3. Apply dynamic seniority weights to skills in play
+    for canon in list(jd_skills.keys()):
+        weight = jd_skills[canon]
+        if jd_level_band >= 3:  # Senior, Lead, Director
+            if canon in ARCHITECTURE_SKILLS:
+                weight *= 2.5  # Strongly prioritize architecture and SRE skills
+            elif canon in SOFT_SKILLS:
+                weight *= 1.5  # Boost leadership and agile delivery skills
+        elif jd_level_band <= 1:  # Intern, Junior
+            if canon in ARCHITECTURE_SKILLS:
+                weight *= 0.5  # Architectural patterns are nice-to-have
+            else:
+                weight *= 2.0  # Foundational coding/tools are highly weighted
+        jd_skills[canon] = weight
 
     if not jd_skills:
-        # Fallback: score against full ontology when no JD provided
         jd_skills = {k: 1.0 for k in SKILL_ONTOLOGY}
 
     max_weight = max(jd_skills.values()) if jd_skills else 1.0

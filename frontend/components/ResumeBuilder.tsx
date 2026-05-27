@@ -81,6 +81,13 @@ const DEFAULT_RESUME_DATA = {
 
 export function ResumeBuilder({ initialResume }: ResumeBuilderProps) {
   const [activeTab, setActiveTab] = useState<"builder" | "ats-resume-score" | "claims-vault">("builder");
+  const [asideMode, setAsideMode] = useState<"preview" | "live-ats">("live-ats");
+
+  // Live real-time scoring states
+  const [liveJd, setLiveJd] = useState("");
+  const [liveRole, setLiveRole] = useState("");
+  const [liveScoreResult, setLiveScoreResult] = useState<any | null>(null);
+  const [liveScoring, setLiveScoring] = useState(false);
 
   // Tab 2: All-in-One ATS Scorer States
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -107,6 +114,92 @@ export function ResumeBuilder({ initialResume }: ResumeBuilderProps) {
     }
     return data;
   });
+
+  const getResumeText = (data: any): string => {
+    let text = "";
+    text += `${data.name || ""}\n`;
+    text += `${data.email || ""} | ${data.phone || ""} | ${data.location || ""}\n`;
+    text += `${data.linkedin_url || ""} | ${data.github_url || ""} | ${data.portfolio_url || ""}\n\n`;
+    text += `PROFESSIONAL SUMMARY\n${data.summary || ""}\n\n`;
+    
+    text += `TECHNICAL SKILLS\n`;
+    if (Array.isArray(data.skills)) {
+      data.skills.forEach((s: any) => {
+        text += `${s.category || ""}: ${s.items || ""}\n`;
+      });
+    }
+    text += `\n`;
+    
+    text += `PROFESSIONAL EXPERIENCE\n`;
+    if (Array.isArray(data.experience)) {
+      data.experience.forEach((e: any) => {
+        text += `${e.role || ""} at ${e.company || ""} (${e.duration || ""})\n`;
+        if (Array.isArray(e.bullets)) {
+          e.bullets.forEach((b: any) => {
+            text += `- ${b || ""}\n`;
+          });
+        }
+      });
+    }
+    text += `\n`;
+    
+    text += `PROJECTS\n`;
+    if (Array.isArray(data.projects)) {
+      data.projects.forEach((p: any) => {
+        text += `${p.title || ""} (${p.duration || ""})\n`;
+        if (Array.isArray(p.bullets)) {
+          p.bullets.forEach((b: any) => {
+            text += `- ${b || ""}\n`;
+          });
+        }
+      });
+    }
+    text += `\n`;
+    
+    text += `EDUCATION\n`;
+    if (Array.isArray(data.education)) {
+      data.education.forEach((edu: any) => {
+        text += `${edu.degree || ""} - ${edu.institution || ""} (${edu.duration || ""})\n`;
+        text += `${edu.details || ""}\n`;
+      });
+    }
+    return text;
+  };
+
+  const runLiveAtsAnalysis = async () => {
+    setLiveScoring(true);
+    try {
+      const resumeText = getResumeText(resumeData);
+      const token = getToken();
+      const res = await fetch(`${API_BASE_URL}/resume/analyze-jd`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          resume_content: resumeText,
+          jd_content: liveJd,
+          target_role: liveRole
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setLiveScoreResult(data);
+      }
+    } catch (e) {
+      console.error("Live ATS analysis failed", e);
+    } finally {
+      setLiveScoring(false);
+    }
+  };
+
+  useEffect(() => {
+    const delayDebounce = setTimeout(() => {
+      runLiveAtsAnalysis();
+    }, 1500);
+    return () => clearTimeout(delayDebounce);
+  }, [resumeData, liveJd, liveRole]);
 
   // Accordion active sections
   const [openSections, setOpenSections] = useState<any>({
@@ -1237,39 +1330,225 @@ export function ResumeBuilder({ initialResume }: ResumeBuilderProps) {
             </div>
           </section>
 
-          {/* PDF Live Previewer Sidebar */}
+          {/* PDF Live Previewer & Live ATS Scorer Aside Sidebar */}
           <aside className="space-y-6">
-            <div className="glass-3d p-6 rounded-2xl border border-white/10 flex flex-col h-full justify-between min-h-[500px]">
+            <div className="glass-3d p-6 rounded-2xl border border-white/10 flex flex-col h-full justify-between min-h-[550px]">
               <div>
-                <div className="flex justify-between items-center mb-4">
-                  <span className="text-xs font-bold uppercase tracking-wider text-zinc-400">
-                    PDF Live Previewer
-                  </span>
+                <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
+                  <div className="flex rounded-lg bg-zinc-950 p-1 border border-white/5">
+                    <button
+                      type="button"
+                      onClick={() => setAsideMode("preview")}
+                      className={`px-3 py-1.5 rounded-md text-[10px] font-bold transition ${
+                        asideMode === "preview"
+                          ? "bg-white/10 text-white"
+                          : "text-zinc-400 hover:text-white"
+                      }`}
+                    >
+                      PDF Preview
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAsideMode("live-ats")}
+                      className={`px-3 py-1.5 rounded-md text-[10px] font-bold transition flex items-center gap-1 ${
+                        asideMode === "live-ats"
+                          ? "bg-white/10 text-white animate-pulse"
+                          : "text-zinc-400 hover:text-white"
+                      }`}
+                    >
+                      <Cpu size={10} className="text-emerald-400" />
+                      Live ATS Scorer
+                    </button>
+                  </div>
                   
-                  {pdfUrl && (
+                  {asideMode === "preview" && pdfUrl && (
                     <a
                       href={pdfUrl}
                       download={`${fileName}.pdf`}
-                      className="flex items-center gap-1 text-xs text-emerald-400 hover:text-white transition font-bold"
+                      className="flex items-center gap-1 text-[10px] text-emerald-400 hover:text-white transition font-bold"
                     >
-                      <Download size={14} />
+                      <Download size={12} />
                       Download PDF
                     </a>
                   )}
                 </div>
 
-                {pdfUrl ? (
-                  <iframe
-                    src={pdfUrl}
-                    className="w-full h-[480px] rounded-xl border border-white/10 bg-zinc-950/80"
-                  />
+                {asideMode === "preview" ? (
+                  pdfUrl ? (
+                    <iframe
+                      src={pdfUrl}
+                      className="w-full h-[480px] rounded-xl border border-white/10 bg-zinc-950/80"
+                    />
+                  ) : (
+                    <div className="w-full h-[480px] rounded-xl border border-dashed border-white/10 bg-zinc-950/20 flex flex-col items-center justify-center text-center p-6">
+                      <FileText size={36} className="text-zinc-600 animate-pulse mb-3" />
+                      <h5 className="font-bold text-sm text-zinc-400">No Compiled Output</h5>
+                      <p className="text-xs text-zinc-600 mt-2 max-w-[200px] leading-relaxed">
+                        Click "Compile PDF" to compile your structured resume template into a gorgeous document!
+                      </p>
+                    </div>
+                  )
                 ) : (
-                  <div className="w-full h-[480px] rounded-xl border border-dashed border-white/10 bg-zinc-950/20 flex flex-col items-center justify-center text-center p-6">
-                    <FileText size={36} className="text-zinc-600 animate-pulse mb-3" />
-                    <h5 className="font-bold text-sm text-zinc-400">No Compiled Output</h5>
-                    <p className="text-xs text-zinc-600 mt-2 max-w-[200px] leading-relaxed">
-                      Click "Compile PDF" to compile your structured resume template into a gorgeous double-column document!
-                    </p>
+                  // Live ATS Scoring Cockpit Panel
+                  <div className="space-y-4">
+                    {/* Live Scorer Targets */}
+                    <div className="p-3 rounded-xl border border-white/5 bg-zinc-950/40 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[9px] uppercase font-bold text-zinc-400 tracking-wider">
+                          Target JD Matcher Context
+                        </span>
+                        {liveScoring && (
+                          <span className="text-[8px] font-mono text-emerald-400 animate-pulse flex items-center gap-1">
+                            <RefreshCw size={8} className="animate-spin" /> Recalculating...
+                          </span>
+                        )}
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="col-span-2">
+                          <input
+                            value={liveRole}
+                            onChange={(e) => setLiveRole(e.target.value)}
+                            placeholder="Target Role (e.g. Senior DevOps Engineer)"
+                            className="w-full rounded-lg border border-white/10 bg-zinc-950 px-2 py-1.5 text-[10px] text-white outline-none focus:border-emerald-500 transition"
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <textarea
+                            value={liveJd}
+                            onChange={(e) => setLiveJd(e.target.value)}
+                            rows={3}
+                            placeholder="Paste Job Description (Optional - blank triggers generic baseline checklists)..."
+                            className="w-full rounded-lg border border-white/10 bg-zinc-950 px-2 py-1.5 text-[10px] leading-normal text-zinc-300 outline-none focus:border-emerald-500 transition resize-y font-sans"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {liveScoreResult ? (
+                      <div className="space-y-3">
+                        {/* Overall Circular Meter Block */}
+                        <div className="flex items-center gap-4 p-3 rounded-xl border border-white/5 bg-white/[0.01] relative overflow-hidden">
+                          <div className="absolute inset-0 bg-emerald-500/[0.01] blur-md" />
+                          <div className={`h-16 w-16 rounded-full border-2 flex flex-col items-center justify-center bg-zinc-950/80 shrink-0 z-10 ${
+                            liveScoreResult.ats_score >= 70 ? "border-emerald-400/40" : liveScoreResult.ats_score >= 50 ? "border-cyan-400/40" : "border-red-400/40"
+                          }`}>
+                            <span className="text-sm font-black text-white">{liveScoreResult.ats_score}%</span>
+                            <span className="text-[6px] uppercase tracking-widest font-black text-emerald-400 leading-none">ATS</span>
+                          </div>
+                          
+                          <div className="min-w-0 space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className={`text-xs font-bold ${
+                                liveScoreResult.grade?.startsWith("A") ? "text-emerald-400" : liveScoreResult.grade?.startsWith("B") ? "text-cyan-400" : "text-yellow-400"
+                              }`}>
+                                Live Grade: {liveScoreResult.grade || "—"}
+                              </span>
+                              <span className="text-[8px] uppercase tracking-widest font-black text-zinc-500 bg-white/5 border border-white/5 rounded px-1.5 py-0.5">
+                                {liveScoreResult.seniority?.jd_level || "Generic"}
+                              </span>
+                            </div>
+                            <p className="text-[10px] text-zinc-400 truncate">
+                              Detected Domain: <span className="text-zinc-200 font-bold">{liveScoreResult.seniority?.jd_domain || liveScoreResult.matched_keywords?.[0] || "Backend"}</span>
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Domain-Aware Checklist Categories */}
+                        {liveScoreResult.missing_by_category && (
+                          <div className="space-y-3 max-h-[220px] overflow-y-auto pr-1">
+                            {/* Category 1: Seniority & Architecture Gaps */}
+                            {liveScoreResult.missing_by_category["Seniority & Architecture"]?.length > 0 && (
+                              <div className="space-y-1">
+                                <span className="text-[8px] uppercase font-black text-red-400 tracking-wider flex items-center gap-1">
+                                  ⚠️ Architecture & Seniority Gaps (Critical)
+                                </span>
+                                <div className="flex flex-wrap gap-1">
+                                  {liveScoreResult.missing_by_category["Seniority & Architecture"].map((kw: string) => (
+                                    <span key={kw} className="text-[8px] font-bold bg-red-500/10 border border-red-500/20 text-red-300 rounded px-1.5 py-0.5">
+                                      {kw}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Category 2: Core Technical Gaps */}
+                            {liveScoreResult.missing_by_category["Core Technical"]?.length > 0 && (
+                              <div className="space-y-1">
+                                <span className="text-[8px] uppercase font-black text-orange-400 tracking-wider flex items-center gap-1">
+                                  🔧 Core Tech Skills (Missing)
+                                </span>
+                                <div className="flex flex-wrap gap-1">
+                                  {liveScoreResult.missing_by_category["Core Technical"].map((kw: string) => (
+                                    <span key={kw} className="text-[8px] font-bold bg-orange-500/10 border border-orange-500/20 text-orange-300 rounded px-1.5 py-0.5">
+                                      {kw}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Category 3: Soft Skills / Methodologies */}
+                            {liveScoreResult.missing_by_category["Soft Skills & Methodologies"]?.length > 0 && (
+                              <div className="space-y-1">
+                                <span className="text-[8px] uppercase font-black text-cyan-400 tracking-wider flex items-center gap-1">
+                                  📋 Delivery & Soft Skills (Missing)
+                                </span>
+                                <div className="flex flex-wrap gap-1">
+                                  {liveScoreResult.missing_by_category["Soft Skills & Methodologies"].map((kw: string) => (
+                                    <span key={kw} className="text-[8px] font-bold bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 rounded px-1.5 py-0.5">
+                                      {kw}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Matched Keywords Box */}
+                            {liveScoreResult.matched_keywords?.length > 0 && (
+                              <div className="space-y-1 pt-1 border-t border-white/5">
+                                <span className="text-[8px] uppercase font-black text-emerald-400 tracking-wider">
+                                  ✅ Matched Skills ({liveScoreResult.matched_keywords.length})
+                                </span>
+                                <div className="flex flex-wrap gap-1">
+                                  {liveScoreResult.matched_keywords.map((kw: string) => (
+                                    <span key={kw} className="text-[8px] font-bold bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 rounded px-1.5 py-0.5">
+                                      {kw}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Priority Recommendations Checklist */}
+                        {liveScoreResult.action_plan?.length > 0 && (
+                          <div className="space-y-1.5 pt-2 border-t border-white/5">
+                            <span className="text-[8px] uppercase font-black text-zinc-400 tracking-wider">
+                              Real-Time ATS Recommendations
+                            </span>
+                            <div className="space-y-1 max-h-[140px] overflow-y-auto pr-1">
+                              {liveScoreResult.action_plan.slice(0, 3).map((act: any, aIdx: number) => (
+                                <div key={aIdx} className="p-2 border border-white/5 rounded-lg bg-zinc-950/40 text-[9px] text-zinc-300 leading-normal flex items-start gap-1.5">
+                                  <AlertCircle size={10} className="text-cyan-400 shrink-0 mt-0.5" />
+                                  <span>{act.action}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="h-40 rounded-xl border border-dashed border-white/10 flex flex-col items-center justify-center text-center p-4">
+                        <Cpu size={24} className="text-zinc-600 animate-bounce mb-2" />
+                        <h6 className="text-[10px] font-bold text-zinc-400">Syncing Live Optimizer...</h6>
+                        <p className="text-[9px] text-zinc-500 mt-1 max-w-[180px]">
+                          Enter summary, skills, or experience to dynamically generate the live ATS compatibility grade.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
