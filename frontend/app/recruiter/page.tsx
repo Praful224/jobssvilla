@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Briefcase, Users, FileCheck2, User, Mail, Calendar, HelpCircle, Search, ShieldCheck } from "lucide-react";
+import { Plus, Briefcase, Users, FileCheck2, User, Mail, Calendar, HelpCircle, Search, ShieldCheck, RefreshCw } from "lucide-react";
 import { apiFetch, getToken, Job, jsonHeaders } from "@/lib/api";
 import { AppShell } from "@/components/AppShell";
 import { JobCard } from "@/components/JobCard";
