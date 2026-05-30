@@ -28,8 +28,8 @@ const DialogOverlay = React.forwardRef<
 ))
 DialogOverlay.displayName = DialogPrimitive.Overlay.displayName
 
-const MotionOverlay = motion(DialogOverlay)
-const MotionContent = motion(DialogPrimitive.Content)
+const MotionOverlay = motion(DialogOverlay) as any
+const MotionContent = motion(DialogPrimitive.Content) as any
 
 const DialogContent = React.forwardRef<
   React.ComponentRef<typeof DialogPrimitive.Content>,
