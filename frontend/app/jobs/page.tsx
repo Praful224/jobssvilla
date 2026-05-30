@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { 
   Briefcase, 
@@ -50,7 +50,7 @@ const emptyCompany = {
   logo_url: "",
 };
 
-export default function JobsPage() {
+function JobsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -664,5 +664,18 @@ export default function JobsPage() {
         </div>
       )}
     </AppShell>
+  );
+}
+
+export default function JobsPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col items-center justify-center min-h-screen text-zinc-500 bg-[#060608]/40 backdrop-blur-md gap-3">
+        <div className="h-8 w-8 rounded-full border-2 border-emerald-500/20 border-t-emerald-400 animate-spin" />
+        <p className="text-xs uppercase tracking-widest font-bold">Loading Workspace...</p>
+      </div>
+    }>
+      <JobsPageContent />
+    </Suspense>
   );
 }
