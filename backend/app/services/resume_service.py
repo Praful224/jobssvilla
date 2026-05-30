@@ -1,4 +1,5 @@
 import os
+import re
 import uuid
 import json
 import subprocess
@@ -699,11 +700,91 @@ def compile_latex_to_pdf(latex_code: str) -> str:
 
 
 # STAR BULLET POINT ENHANCER DETERMINISTIC ALGORITHM
+# STAR BULLET POINT ENHANCER METHOD (DOUBLY OPTIMIZED: GENUINE AI + ADVANCED OFFLINE FALLBACK)
 def enhance_bullet_star(bullet: str, tone: str = "Technical") -> list[str]:
+    import os
+    import json
+    import requests
+
+    # 1. High-Fidelity Gemini AI Integration (If API Key is available)
+    gemini_key = os.getenv("GEMINI_API_KEY")
+    if gemini_key:
+        try:
+            prompt = f"""
+            You are a world-class executive technical resume writer and ATS optimization expert.
+            Rewrite the following resume experience bullet point: "{bullet}".
+            
+            Requirements:
+            - Create exactly 3 distinct, high-impact, professional variations in a "{tone}" tone.
+            - Follow the STAR method (Situation, Task, Action, Result) with strong action verbs and quantified impact metrics (%, $, time, or scaling metrics).
+            - Strictly return a JSON array of 3 strings. Do not include markdown fences (like ```json) or explanation text.
+            """
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_key}"
+            headers = {"Content-Type": "application/json"}
+            body = {
+                "contents": [{
+                    "parts": [{
+                        "text": prompt
+                    }]
+                }]
+            }
+            res = requests.post(url, headers=headers, json=body, timeout=8)
+            if res.status_code == 200:
+                data = res.json()
+                text_out = data["contents"][0]["parts"][0]["text"].strip()
+                if text_out.startswith("```"):
+                    lines = text_out.splitlines()
+                    if lines[0].startswith("```"):
+                        lines = lines[1:]
+                    if lines[-1].strip() == "```":
+                        lines = lines[:-1]
+                    text_out = "\n".join(lines).strip()
+                parsed = json.loads(text_out)
+                if isinstance(parsed, list) and len(parsed) >= 3:
+                    return parsed[:3]
+        except Exception as e:
+            print(f"Gemini API Bullet Enhancer Error: {e}. Falling back to advanced local ontology rules.")
+
+    # 2. Smart local Offline Fallback (Grammatically corrected & Domain-aware)
     bullet_lower = bullet.lower()
     
-    # Template enhancements mapped dynamically to domain terms
+    # Pre-written templates for highly requested technical terms
     templates = {
+        "ci cd": [
+            "Spearheaded the automation and optimization of secure CI/CD pipelines, accelerating feature delivery runtime by 42% and eliminating manual integration overhead.",
+            "Engineered robust multi-stage Git pipelines (GitHub Actions/Jenkins), boosting code coverage verification and reducing deployment failures by 35%.",
+            "Orchestrated continuous deployment workflows with blue-green rollouts, ensuring zero-downtime service upgrades across microservice clusters."
+        ],
+        "pipeline": [
+            "Spearheaded the automation and optimization of secure CI/CD pipelines, accelerating feature delivery runtime by 42% and eliminating manual integration overhead.",
+            "Engineered robust multi-stage Git pipelines (GitHub Actions/Jenkins), boosting code coverage verification and reducing deployment failures by 35%.",
+            "Orchestrated continuous deployment workflows with blue-green rollouts, ensuring zero-downtime service upgrades across microservice clusters."
+        ],
+        "k8s": [
+            "Architected and deployed highly resilient Kubernetes (K8s) clusters, establishing metrics-driven auto-scaling that cut cloud host utilization costs by 28%.",
+            "Orchestrated containerized microservice grid setups using Helm and private bridge networks, neutralizing replica synchronization latency by 35%.",
+            "Designed secure ingress controllers and service mesh policies, achieving high availability and a 99.99% uptime benchmark."
+        ],
+        "kubernetes": [
+            "Architected and deployed highly resilient Kubernetes (K8s) clusters, establishing metrics-driven auto-scaling that cut cloud host utilization costs by 28%.",
+            "Orchestrated containerized microservice grid setups using Helm and private bridge networks, neutralizing replica synchronization latency by 35%.",
+            "Designed secure ingress controllers and service mesh policies, achieving high availability and a 99.99% uptime benchmark."
+        ],
+        "terraform": [
+            "Provisioned secure, cloud-agnostic infrastructure utilizing Terraform (IaC), trimming deployment setup timelines from days to minutes while ensuring zero configuration drift.",
+            "Engineered reusable Terraform module libraries to automate cloud resource staging, reducing multi-environment deployment overhead by 45%.",
+            "Architected state-locking and backend encryption policies in cloud infrastructure pipelines, enhancing security posture by 100%."
+        ],
+        "monitoring": [
+            "Designed comprehensive observability grids using Prometheus and Grafana dashboards, accelerating incident response and reducing MTTR by 30%.",
+            "Configured proactive alertmanager rules and CloudWatch monitoring matrices, eliminating critical service downtime through preemptive threat detection.",
+            "Orchestrated distributed transaction tracing infrastructures, identifying and eliminating queries bottlenecks to reclaim 25% of server bandwidth."
+        ],
+        "prometheus": [
+            "Designed comprehensive observability grids using Prometheus and Grafana dashboards, accelerating incident response and reducing MTTR by 30%.",
+            "Configured proactive alertmanager rules and CloudWatch monitoring matrices, eliminating critical service downtime through preemptive threat detection.",
+            "Orchestrated distributed transaction tracing infrastructures, identifying and eliminating queries bottlenecks to reclaim 25% of server bandwidth."
+        ],
         "api": [
             "Spearheaded the architecture and deployment of secure RESTful APIs, accelerating transaction throughput by 42% and slashing average response latency to 85ms.",
             "Engineered high-throughput API endpoints utilizing FastAPI asynchronous event loops, successfully scaling concurrent connection limits to 20k+ sessions.",
@@ -730,23 +811,96 @@ def enhance_bullet_star(bullet: str, tone: str = "Technical") -> list[str]:
             "Orchestrated cloud computing instances behind automated load balancers, dynamically autoscaling resource allocations to absorb traffic spikes."
         ]
     }
-    
-    # Match keywords
+
+    # Match keywords to fetch specialized templates
     matched_key = None
     for key in templates.keys():
         if key in bullet_lower:
             matched_key = key
             break
-            
-    if not matched_key:
-        # Default generalized STAR action bullet points
+
+    if matched_key:
+        return templates[matched_key]
+
+    # 3. Dynamic Grammatical Scrambler & Outcome Randomizer (Prevents Repetitive Metrics/Phrases)
+    clean_bullet = re.sub(r"^[•\-\s\*]+", "", bullet).strip().rstrip(".")
+    
+    words = clean_bullet.split()
+    if not words:
         return [
-            f"Spearheaded critical engineering initiatives to {bullet}, establishing metrics-driven development cycles that boosted operational delivery by 24%.",
-            f"Orchestrated architectural redesigns for core platform modules to {bullet}, improving backend throughput by 32% and mitigating system bottlenecks.",
-            f"Designed and deployed robust, highly scalable automated pipelines to {bullet}, reducing manual deployment timelines by 45%."
+            "Spearheaded critical technical operations, establishing metrics-driven development cycles that boosted operational delivery by 24%.",
+            "Orchestrated architectural redesigns for core platform modules, improving backend throughput by 32% and mitigating system bottlenecks.",
+            "Designed and deployed robust, highly scalable automated pipelines, reducing manual deployment timelines by 45%."
+        ]
+
+    # Generate unique, non-repetitive metrics and outcome phrases dynamically using a string character hash
+    h = sum(ord(c) for c in clean_bullet)
+    
+    # Pools
+    numbers = [15, 24, 28, 32, 35, 40, 42, 45, 50, 55, 60, 65, 75]
+    n1 = numbers[h % len(numbers)]
+    n2 = numbers[(h + 3) % len(numbers)]
+    n3 = numbers[(h + 7) % len(numbers)]
+    
+    pool_1 = [
+        f"boosting operational delivery by {n1}%",
+        f"accelerating release pipeline velocity by {n1}%",
+        f"reclaiming {n1}% of active engineering bandwidth",
+        f"improving developer loop feedback times by {n1}%",
+        f"slashing manual infrastructure provisioning overhead by {n1}%"
+    ]
+    pool_2 = [
+        f"improving backend service throughput by {n2}% and mitigating system bottlenecks",
+        f"slashing system MTTR by {n2}% while establishing robust failover nodes",
+        f"reducing critical database query execution latency by {n2}%",
+        f"optimizing cloud resource allocations to shave {n2}% off monthly operational overhead",
+        f"reclaiming {n2}% of processing bandwidth through state caching layers"
+    ]
+    pool_3 = [
+        f"reducing manual deployment timelines by {n3}%",
+        f"slashing production incident occurrences by {n3}%",
+        f"boosting automated regression testing coverage to {n3 + 15}%",
+        f"cutting cloud resource hosting costs by {n3}%",
+        f"accelerating end-to-end payload routing speeds by {n3}%"
+    ]
+    
+    suffix_1 = pool_1[h % len(pool_1)]
+    suffix_2 = pool_2[(h + 2) % len(pool_2)]
+    suffix_3 = pool_3[(h + 4) % len(pool_3)]
+
+    first_word = words[0].lower()
+    
+    # CASE A: User entered past-tense action (e.g. "developed", "migrated", "implemented")
+    if first_word.endswith("ed") or first_word in ("built", "wrote", "ran", "led", "drove", "drew", "made", "set", "spent", "cut"):
+        return [
+            f"Successfully {clean_bullet}, establishing metrics-driven development cycles that resulted in {suffix_1}.",
+            f"Collaborated with cross-functional teams and {clean_bullet}, directly {suffix_2}.",
+            f"Designed and deployed robust, highly scalable architectures that {clean_bullet}, successfully {suffix_3}."
         ]
         
-    return templates[matched_key]
+    # CASE B: User entered gerund action (e.g. "developing", "migrating", "implementing")
+    if first_word.endswith("ing"):
+        return [
+            f"Spearheaded critical engineering initiatives focused on {clean_bullet}, establishing metrics-driven development cycles that resulted in {suffix_1}.",
+            f"Orchestrated architectural redesigns for core platform modules by {clean_bullet}, directly {suffix_2}.",
+            f"Designed and deployed robust, highly scalable automated pipelines for {clean_bullet}, successfully {suffix_3}."
+        ]
+
+    # CASE C: User entered infinitive action (e.g. "develop", "migrate") or a noun phrase (e.g. "ci/cd", "redis caching")
+    COMMON_VERBS = {
+        "build", "deploy", "create", "automate", "manage", "improve", "optimize", 
+        "secure", "setup", "set", "write", "configure", "integrate", "run", "design",
+        "architect", "implement", "develop", "maintain", "test", "monitor"
+    }
+    
+    is_infinitive_verb = first_word in COMMON_VERBS
+    verb_phrase = clean_bullet if is_infinitive_verb else f"orchestrate and scale {clean_bullet}"
+
+    return [
+        f"Spearheaded critical engineering initiatives to {verb_phrase}, establishing metrics-driven development cycles that resulted in {suffix_1}.",
+        f"Orchestrated architectural redesigns for core platform modules to {verb_phrase}, directly {suffix_2}.",
+        f"Designed and deployed robust, highly scalable automated pipelines to {verb_phrase}, successfully {suffix_3}."
+    ]
 
 
 # LOCAL SYNONYM-AWARE ATS JD-MATCHER

@@ -25,6 +25,7 @@ if (isDev) {
 }
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   allowedDevOrigins: allowedOrigins,
 };
 

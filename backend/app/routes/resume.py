@@ -83,7 +83,14 @@ def rewrite_bullet(payload: BulletEnhanceRequest):
 
 @router.post("/resume/analyze-jd")
 def analyze_jd(payload: ResumeJDMatchRequest):
-    return analyze_resume_vs_jd(payload.resume_content, payload.jd_content, payload.target_role)
+    return run_full_ats_analysis(
+        resume_text=payload.resume_content,
+        jd_text=payload.jd_content,
+        target_role=payload.target_role or "",
+        has_tables=False,
+        is_scanned=False,
+        filename=""
+    )
 
 
 @router.post("/resume/verify-claim")

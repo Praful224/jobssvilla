@@ -1,0 +1,72 @@
+version: "3.8"
+
+services:
+  # ── PostgreSQL Database Storage ────────────────────────────────────────────
+  db:
+    image: postgres:15-alpine
+    container_name: jobsvilla-db
+    restart: always
+    environment:
+      POSTGRES_DB: jobsvilla
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: secret_master_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - jobsvilla-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d jobsvilla"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── FastAPI Backend Service ───────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: jobsvilla-backend
+    restart: always
+    environment:
+      DATABASE_URL: postgresql://postgres:secret_master_password@db:5432/jobsvilla
+      PORT: 8000
+      GEMINI_API_KEY: ""
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - jobsvilla-net
+    healthcheck:
+      test: ["CMD-SHELL", "python -c 'import urllib.request; urllib.request.urlopen(\"http://localhost:8000/health\")' || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  # ── Next.js Frontend Service ──────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: jobsvilla-frontend
+    restart: always
+    environment:
+      NEXT_PUBLIC_API_URL: http://backend:8000
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - jobsvilla-net
+
+volumes:
+  postgres_data:
+
+networks:
+  jobsvilla-net:
+    driver: bridge
