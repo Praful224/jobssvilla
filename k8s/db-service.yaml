@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: db
+  namespace: jobsvilla-prod
+  labels:
+    app: jobsvilla-db
+spec:
+  ports:
+    - port: 5432
+      targetPort: 5432
+      protocol: TCP
+  selector:
+    app: jobsvilla-db
+  type: ClusterIP

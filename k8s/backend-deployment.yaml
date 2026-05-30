@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jobsvilla-backend
+  namespace: jobsvilla-prod
+  labels:
+    app: jobsvilla-backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: jobsvilla-backend
+  template:
+    metadata:
+      labels:
+        app: jobsvilla-backend
+    spec:
+      containers:
+        - name: backend
+          image: jobsvilla-backend:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: DATABASE_URL
+              value: "postgresql://postgres:secret_master_password@db:5432/jobsvilla"
+            - name: PORT
+              value: "8000"
+            - name: GEMINI_API_KEY
+              value: ""
+          ports:
+            - containerPort: 8000
+              name: http
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 20
+            periodSeconds: 15
