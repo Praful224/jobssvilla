@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { 
   User, 
@@ -38,7 +38,7 @@ const emptyProfile: Profile & { role?: string } = {
   role: "student",
 };
 
-export default function ProfilePage() {
+function ProfilePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -800,4 +800,21 @@ export default function ProfilePage() {
       )}
     </AppShell>
   );
+}
+
+export default function ProfilePage() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col items-center justify-center min-h-screen text-zinc-500 bg-[#060608]/40 backdrop-blur-md gap-3">
+        <div className="h-8 w-8 rounded-full border-2 border-emerald-500/20 border-t-emerald-400 animate-spin" />
+        <p className="text-xs uppercase tracking-widest font-bold">Loading Space...</p>
+      </div>
+    }>
+      <JobsPageContentBypass />
+    </Suspense>
+  );
+}
+
+function JobsPageContentBypass() {
+  return <ProfilePageContent />;
 }
