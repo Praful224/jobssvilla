@@ -15,7 +15,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 
 # Compile libraries to reusable binary wheels to keep the final production image clean
-RUN pip install --no-cache-dir --user -r requirements.txt
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
+    pip install --no-cache-dir --user -r requirements.txt
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Stage 2: Minimalist Production Image
@@ -24,10 +25,11 @@ FROM python:3.11-slim AS runner
 
 WORKDIR /app
 
-# Install runtime PostgreSQL client library
+# Install runtime PostgreSQL client library & upgrade base packages for security compliance
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* && \
+    pip install --no-cache-dir --upgrade pip setuptools wheel
 
 # Copy pre-compiled dependencies from builder stage
 COPY --from=builder /root/.local /root/.local
