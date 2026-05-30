@@ -35,7 +35,7 @@ backend-test:
   stage: test
   image: python:3.11-slim
   script:
-    - pip install -r backend/requirements.txt pytest
+    - pip install -r requirements.txt pytest
     - cd backend && pytest
 
 # ── STAGE 3: SECURITY SCANNING (DevSecOps shifting-left) ─────────────────────
