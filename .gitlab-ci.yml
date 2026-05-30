@@ -27,7 +27,7 @@ eslint-lint:
   image: node:20-alpine
   script:
     - cd frontend
-    - npm ci
+    - npm install
     - npm run lint --if-present
 
 # ── STAGE 2: UNIT TESTING ───────────────────────────────────────────────────
