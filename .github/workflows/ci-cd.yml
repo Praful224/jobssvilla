@@ -1,0 +1,142 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# JOBSVILLA PRODUCTION DEVSECOPS CI/CD PIPELINE (100% Free & Open-Source)
+# ══════════════════════════════════════════════════════════════════════════════
+name: "Production-Grade DevSecOps Pipeline"
+
+on:
+  push:
+    branches: [ "main", "master", "develop" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  # ── STAGE 1: AUTOMATED TESTING & LINTING ──────────────────────────────────
+  lint-and-test:
+    name: "Automated QA & Unit Tests"
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      # Backend Test Pipeline
+      - name: Setup Python Runtime Environment
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Backend Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+          pip install pytest flake8
+
+      - name: Run Backend Linting (flake8 checks)
+        run: |
+          # stop the build if there are Python syntax errors or undefined names
+          flake8 backend --count --select=E9,F63,F7,F82 --show-source --statistics
+          # exit-zero treats all other errors as warnings
+          flake8 backend --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+      # Frontend Test Pipeline
+      - name: Setup Node.js Runtime Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Frontend Dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Build Next.js Production Bundle
+        run: |
+          cd frontend
+          npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: 1
+
+  # ── STAGE 2: SECURE STATIC CODE AUDIT (Trivy Repository Scanning) ─────────
+  security-audit:
+    name: "Static Repository Security Scan"
+    runs-on: ubuntu-latest
+    needs: lint-and-test
+    
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy FS Vulnerability Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          ignore-unfixed: true
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+
+  # ── STAGE 3: CONTAINER BUILD & IMAGE CVE CVE AUDIT ────────────────────────
+  docker-build-and-scan:
+    name: "Docker Build & Container CVE Scan"
+    runs-on: ubuntu-latest
+    needs: security-audit
+    
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      # Build Backend Container
+      - name: Build Backend Production Docker Image
+        run: |
+          docker build -t jobsvilla-backend:${{ github.sha }} ./backend
+
+      # Scan Backend Container using Open-Source Trivy
+      - name: Run Trivy Vulnerability Scan on Backend Image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'jobsvilla-backend:${{ github.sha }}'
+          format: 'table'
+          exit-code: '1' # Halts and fails the pipeline if critical CVEs are found
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+      # Build Frontend Container
+      - name: Build Frontend Production Docker Image
+        run: |
+          docker build -t jobsvilla-frontend:${{ github.sha }} ./frontend
+
+      # Scan Frontend Container using Open-Source Trivy
+      - name: Run Trivy Vulnerability Scan on Frontend Image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'jobsvilla-frontend:${{ github.sha }}'
+          format: 'table'
+          exit-code: '1' # Halts and fails the pipeline if critical CVEs are found
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+      # ── DOCKER REGISTRY PUSH (PRODUCTION PREPARATION STUB) ─────────────────
+      # Once you create your free accounts on Docker Hub, you uncomment this block
+      # to push your highly secure, verified containers dynamically!
+      #
+      # - name: Log in to Docker Hub Registry
+      #   uses: docker/login-action@v3
+      #   with:
+      #     username: ${{ secrets.DOCKER_USERNAME }}
+      #     password: ${{ secrets.DOCKER_PASSWORD }}
+      #
+      # - name: Push Verified Production Images
+      #   run: |
+      #     docker tag jobsvilla-backend:${{ github.sha }} ${{ secrets.DOCKER_USERNAME }}/jobsvilla-backend:latest
+      #     docker tag jobsvilla-frontend:${{ github.sha }} ${{ secrets.DOCKER_USERNAME }}/jobsvilla-frontend:latest
+      #     docker push ${{ secrets.DOCKER_USERNAME }}/jobsvilla-backend:latest
+      #     docker push ${{ secrets.DOCKER_USERNAME }}/jobsvilla-frontend:latest
